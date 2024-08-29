@@ -44,7 +44,9 @@ class AvocadoRunEnv:
         if self.OBSERVATIONS_AS_IMAGES:
             observation = np.array(self.get_image())
         else:
-            observation = (self.player-self.avocado) + (self.player-self.enemy)
+            # Limited to checking the distance from only one enemy
+            observation = (self.player-self.avocado) + \
+                (self.player-self.enemies[0])
         return observation
 
     def step(self, action, step_limit=True):
@@ -61,8 +63,9 @@ class AvocadoRunEnv:
         if self.OBSERVATIONS_AS_IMAGES:
             new_observation = np.array(self.get_image())
         else:
+            # Limited to checking the distance from only one enemy
             new_observation = (self.player-self.avocado) + \
-                (self.player-self.enemy)
+                (self.player-self.enemies[0])
 
         terminated = False
         reward = -self.MOVE_PENALTY
