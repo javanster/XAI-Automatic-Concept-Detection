@@ -19,8 +19,8 @@ class AvocadoRunGymEnv(Env):
     def __init__(self, render_mode=None, moving_enemy=False, num_enemies=1):
         self.moving_enemy = moving_enemy
         self.num_enemies = num_enemies
-        self.grid_side_length = 10
-        self.action_space = Discrete(9)
+        self.grid_side_length = 15
+        self.action_space = Discrete(5)
         self.observation_space_shape = (
             self.grid_side_length, self.grid_side_length, 3)
         self.observation_space = Box(
