@@ -21,20 +21,12 @@ class Entity:
         if choice == 0:
             self.move(y=1)  # Up
         elif choice == 1:
-            self.move(x=1, y=1)  # Up right
-        elif choice == 2:
             self.move(x=1)  # Right
-        elif choice == 3:
-            self.move(x=1, y=-1)  # Down right
-        elif choice == 4:
+        elif choice == 2:
             self.move(y=-1)  # Down
-        elif choice == 5:
-            self.move(x=-1, y=-1)  # Down left
-        elif choice == 6:
+        elif choice == 3:
             self.move(x=-1)  # Left
-        elif choice == 7:
-            self.move(x=-1, y=1)  # Up left
-        elif choice == 8:
+        elif choice == 4:
             self.move()  # Do nothing
 
     def move(self, x=0, y=0):
@@ -53,5 +45,6 @@ class Entity:
             self.y -= 1
 
     def random_action(self):
-        rand_act = np.random.randint(0, 8)
+        # Should always move, so action 4 is omitted
+        rand_act = np.random.randint(0, 4)
         self.action(rand_act)
