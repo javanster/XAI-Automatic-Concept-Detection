@@ -19,7 +19,7 @@ class AvocadoRunGymEnv(Env):
     def __init__(self, render_mode=None, moving_enemy=False, num_enemies=1):
         self.moving_enemy = moving_enemy
         self.num_enemies = num_enemies
-        self.grid_side_length = 15
+        self.grid_side_length = 10
         self.action_space = Discrete(5)
         self.observation_space_shape = (
             self.grid_side_length, self.grid_side_length, 3)
@@ -28,11 +28,14 @@ class AvocadoRunGymEnv(Env):
         )
         self.window_size = 600
 
-        assert render_mode is None or render_mode in self.METADATA["render_modes"]
-        self.render_mode = render_mode
+        self.set_render_mode(render_mode=render_mode)
 
         self.window = None
         self.clock = None
+
+    def set_render_mode(self, render_mode=None):
+        assert render_mode is None or render_mode in self.METADATA["render_modes"]
+        self.render_mode = render_mode
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -101,8 +104,7 @@ class AvocadoRunGymEnv(Env):
         return new_observation, reward, terminated, False, info
 
     def render(self):
-        if self.render_mode == "rgb_array":
-            return self._render_frame()
+        return self._render_frame()
 
     def _render_frame(self):
         if self.window is None and self.render_mode == "human":
@@ -162,6 +164,7 @@ class AvocadoRunGymEnv(Env):
             pygame.event.pump()
             pygame.display.update()
             self.clock.tick(self.METADATA["render_fps"])
+            return None
 
         else:
             return np.transpose(
