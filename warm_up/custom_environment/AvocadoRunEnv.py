@@ -19,7 +19,7 @@ class AvocadoRunEnv:
         self.num_enemies = num_enemies
 
     SIZE = 10
-    MOVE_PENALTY = 1
+    STEP_PENALTY = 1
     ENEMY_HIT_PENALTY = 300
     AVOCADO_REWARD = 30
     OBSERVATION_SPACE_VALUES = (SIZE, SIZE, 3)
@@ -68,7 +68,7 @@ class AvocadoRunEnv:
                 (self.player-self.enemies[0])
 
         terminated = False
-        reward = -self.MOVE_PENALTY
+        reward = -self.STEP_PENALTY
         if any(self.player == enemy for enemy in self.enemies):
             reward = -self.ENEMY_HIT_PENALTY
             terminated = True
