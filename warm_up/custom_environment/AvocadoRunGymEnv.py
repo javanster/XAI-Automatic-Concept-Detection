@@ -11,12 +11,14 @@ class AvocadoRunGymEnv(Env):
     partly move towards the agent), and eat the avocado.
     """
 
-    METADATA = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
+    METADATA = {"render_modes": ["human", "rgb_array", "q_values"]}
     STEP_PENALTY = 1
     ENEMY_HIT_PENALTY = 300
     AVOCADO_REWARD = 30
 
-    def __init__(self, render_mode=None, moving_enemy=False, num_enemies=1):
+    def __init__(self, render_mode=None, moving_enemy=False, num_enemies=1, render_fps=4, show_every=1):
+        self.render_fps = render_fps
+        self.show_every = show_every
         self.moving_enemy = moving_enemy
         self.num_enemies = num_enemies
         self.grid_side_length = 10
@@ -37,14 +39,15 @@ class AvocadoRunGymEnv(Env):
         assert render_mode is None or render_mode in self.METADATA["render_modes"]
         self.render_mode = render_mode
 
-    def reset(self, seed=None, options=None):
+    def reset(self, episode, model=None, seed=None, options=None):
         super().reset(seed=seed)
 
-        self.agent = Entity(env_size=self.grid_side_length)
+        self.avocado = Entity(
+            env_size=self.grid_side_length)
 
-        self.avocado = Entity(env_size=self.grid_side_length)
-        while self.avocado == self.agent:
-            self.avocado = Entity(self.grid_side_length)
+        self.agent = Entity(env_size=self.grid_side_length)
+        while self.agent == self.avocado:
+            self.agent = Entity(self.grid_side_length)
 
         self.enemies = []
         for _ in range(self.num_enemies):
@@ -57,8 +60,8 @@ class AvocadoRunGymEnv(Env):
 
         observation = self._get_obs()
 
-        if self.render_mode == "human":
-            self._render_frame()
+        if self.show_every and episode % self.show_every == 0:
+            self._render(model)
 
         return observation
 
@@ -72,7 +75,7 @@ class AvocadoRunGymEnv(Env):
 
         return obs
 
-    def step(self, action, step_limit=True):
+    def step(self, action, episode, step_limit=True, model=None):
         self.episode_step += 1
         self.agent.action(action)
 
@@ -98,29 +101,96 @@ class AvocadoRunGymEnv(Env):
 
         info = {}
 
-        if self.render_mode == "human":
-            self._render_frame()
+        if self.show_every and episode % self.show_every == 0:
+            self._render(model=model)
 
         return new_observation, reward, terminated, False, info
 
-    def render(self):
-        return self._render_frame()
+    def _render(self, model):
+        if self.render_mode == "q_values":
+            if not model:
+                raise ValueError(
+                    "When in render mode \"q_values\", a model needs to be provided")
+            q_values_dict = self._get_q_values_dict(model=model)
+            self._draw_entities(q_value_dict=q_values_dict)
+        elif self.render_mode == "human":
+            self._draw_entities()
 
-    def _render_frame(self):
-        if self.window is None and self.render_mode == "human":
+    def close(self):
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
+
+    def _get_q_values_dict(self, model):
+        obs = np.zeros(
+            (self.grid_side_length, self.grid_side_length, 3), dtype=np.uint8)
+        obs[self.avocado.x, self.avocado.y] = (0, 255, 0)
+        for enemy in self.enemies:
+            obs[enemy.x, enemy.y] = (255, 0, 0)
+
+        q_value_dict = {}
+        batch_obs = []
+        agent_positions = []
+
+        for x in range(self.grid_side_length):
+            for y in range(self.grid_side_length):
+                # Checks that the coordinates are of an empty cell
+                if not (any((x == enemy.x and y == enemy.y) for enemy in self.enemies) or (x == self.avocado.x and y == self.avocado.y) or (x == self.agent.x and y == self.agent.y)):
+                    obs_copy = obs.copy()
+                    obs_copy[x, y] = (0, 255, 175)  # Simulate agent's position
+                    observation_reshaped = obs_copy.reshape(
+                        -1, *self.observation_space_shape) / 255.0
+
+                    batch_obs.append(observation_reshaped)
+                    agent_positions.append((x, y))
+
+        if batch_obs:
+            batch_obs = np.vstack(batch_obs)
+            q_values_batch = model.predict(batch_obs)
+
+            for i, (x, y) in enumerate(agent_positions):
+                max_q_value = np.max(q_values_batch[i])
+                q_value_dict[(x, y)] = max_q_value
+
+        # Normalize the Q-values to be values between 0 and 255
+        if q_value_dict:
+            max_q_value_in_dict = max(q_value_dict.values())
+            min_q_value_in_dict = min(q_value_dict.values())
+
+            for (x, y) in q_value_dict.keys():
+                value = q_value_dict[(x, y)]
+                q_value_dict[(x, y)] = (
+                    (value - min_q_value_in_dict) / (max_q_value_in_dict - min_q_value_in_dict)) * 255
+
+        return q_value_dict
+
+    def _draw_entities(self, q_value_dict=None):
+        if self.window is None:
             pygame.init()
             pygame.display.init()
             self.window = pygame.display.set_mode(
                 (self.window_size, self.window_size)
             )
-        if self.clock is None and self.render_mode == "human":
+        if self.clock is None:
             self.clock = pygame.time.Clock()
 
         canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill((0, 0, 0))
-        pix_square_size = (
-            self.window_size / self.grid_side_length
-        )
+        pix_square_size = (self.window_size / self.grid_side_length)
+
+        # Draw the Q-value heatmap
+        if q_value_dict:
+            for (x, y) in q_value_dict.keys():
+                pygame.draw.rect(
+                    canvas,
+                    (q_value_dict[(x, y)], 0, q_value_dict[(x, y)]),
+                    pygame.Rect(
+                        pix_square_size * x,
+                        pix_square_size * y,
+                        pix_square_size,
+                        pix_square_size
+                    )
+                )
 
         # Drawing the avocado
         pygame.draw.rect(
@@ -159,19 +229,7 @@ class AvocadoRunGymEnv(Env):
                 )
             )
 
-        if self.render_mode == "human":
-            self.window.blit(canvas, canvas.get_rect())
-            pygame.event.pump()
-            pygame.display.update()
-            self.clock.tick(self.METADATA["render_fps"])
-            return None
-
-        else:
-            return np.transpose(
-                np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
-            )
-
-    def close(self):
-        if self.window is not None:
-            pygame.display.quit()
-            pygame.quit()
+        self.window.blit(canvas, canvas.get_rect())
+        pygame.event.pump()
+        pygame.display.update()
+        self.clock.tick(self.render_fps)
