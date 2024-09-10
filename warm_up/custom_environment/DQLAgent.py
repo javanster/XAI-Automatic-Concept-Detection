@@ -26,7 +26,8 @@ class DQLAgent:
                  update_target_every,
                  epsilon,
                  epsilon_decay,
-                 min_epsilon
+                 min_epsilon,
+                 model_path,
                  ) -> None:
 
         self.REPLAY_BUFFER_SIZE = replay_buffer_size
@@ -37,9 +38,10 @@ class DQLAgent:
         self.UPDATE_TARGET_EVERY = update_target_every
         self.env = env
 
-        self.online_model = self._create_model()
+        online_model = load_model(
+            model_path) if model_path else self._create_model()
+        self.online_model = online_model
         self.target_model = self._create_model()
-
         self.target_model.set_weights(self.online_model.get_weights())
 
         self.replay_buffer = deque(maxlen=self.REPLAY_BUFFER_SIZE)
@@ -119,13 +121,7 @@ class DQLAgent:
             self.target_model.set_weights(self.online_model.get_weights())
             self.target_update_counter = 0
 
-    def train(self, episodes, show_every=None, model_path=None, rolling_average_window=None):
-        if model_path:
-            loaded_model = load_model(model_path, custom_objects=None,
-                                      compile=True, safe_mode=True)
-            self.online_model = loaded_model
-            self.target_model = loaded_model
-
+    def train(self, episodes, min_save_model_episode, save_model_every, rolling_average_window=None):
         random.seed(28)
         np.random.seed(28)
         tf.random.set_seed(28)
@@ -140,8 +136,8 @@ class DQLAgent:
         for episode in tqdm(range(1, episodes + 1), unit="episode"):
 
             episode_reward = 0
-            step = 0
-            current_state = self.env.reset()
+            current_state = self.env.reset(
+                model=self.online_model, episode=episode)
 
             terminated = False
 
@@ -151,21 +147,16 @@ class DQLAgent:
                 else:
                     action = np.random.randint(0, self.env.action_space.n)
 
-                new_state, reward, terminated, _, _ = self.env.step(action)
+                new_state, reward, terminated, _, _ = self.env.step(
+                    action=action, model=self.online_model, episode=episode)
 
                 episode_reward += reward
-
-                if show_every and episode % show_every == 0:
-                    self.env.set_render_mode("human")
-                    self.env.render()
-                    self.env.set_render_mode(None)
 
                 self._update_replay_buffer(
                     (current_state, action, reward, new_state, terminated))
                 self._train_network(terminated)
 
                 current_state = new_state
-                step += 1
 
             rewards_queue.append(episode_reward)
 
@@ -193,7 +184,7 @@ class DQLAgent:
                 plt.tight_layout()
                 plt.pause(0.1)
 
-            if episode >= 5000 and episode % 100 == 0:
+            if episode >= min_save_model_episode and episode % save_model_every == 0:
                 min_reward = min(rewards_queue)
                 max_reward = max(rewards_queue)
 
@@ -207,21 +198,20 @@ class DQLAgent:
         plt.ioff()
         plt.show()
 
-    def test(self, model_path, render_q_values=False):
-        model = load_model(model_path, custom_objects=None,
-                           compile=True, safe_mode=True)
+    def test(self, episodes=10):
+        for episode in range(episodes):
 
-        while True:
-            observation = self.env.reset()
+            observation = self.env.reset(
+                episode=episode, model=self.online_model)
             terminated = False
 
             while not terminated:
                 observation_reshaped = np.array(
                     observation).reshape(-1, *self.env.observation_space_shape) / 255.0
-                action = np.argmax(model.predict(observation_reshaped))
+                action = np.argmax(
+                    self.online_model.predict(observation_reshaped))
 
-                model_for_rendering = model if render_q_values else None
                 observation, _, terminated, _, _ = self.env.step(
-                    action, step_limit=False, render_q_values=render_q_values, model=model_for_rendering)
+                    action=action, episode=episode, step_limit=False, model=self.online_model)
 
             time.sleep(2)
