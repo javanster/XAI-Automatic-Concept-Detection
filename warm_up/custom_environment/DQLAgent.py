@@ -6,45 +6,53 @@ import time
 import numpy as np
 import random
 import tensorflow as tf
-import os
 from tqdm import tqdm
 from keras.layers import Input
 from keras.saving import load_model
+import matplotlib.pyplot as plt
 
 
 class DQLAgent:
     """
-    A class for a Deep Q-Learning agent utilizing two CNNs for learning
+    A class for a Deep Q-Learning agent utilizing two CNNs for learning (double deep Q-networks)
     """
 
-    def __init__(self, env) -> None:
-        self.REPLAY_BUFFER_SIZE = 50_000
-        self.MIN_REPLAY_BUFFER_SIZE = 1_000
-        self.MINIBATCH_SIZE = 64
+    def __init__(self,
+                 env,
+                 replay_buffer_size,
+                 min_replay_buffer_size,
+                 minibatch_size,
+                 discount,
+                 update_target_every,
+                 epsilon,
+                 epsilon_decay,
+                 min_epsilon
+                 ) -> None:
+
+        self.REPLAY_BUFFER_SIZE = replay_buffer_size
+        self.MIN_REPLAY_BUFFER_SIZE = min_replay_buffer_size
+        self.MINIBATCH_SIZE = minibatch_size
         self.MODEL_NAME = "256x2"
-        self.DISCOUNT = 0.99
-        self.UPDATE_TARGET_EVERY = 5
-        self.MIN_REWARD = -200
+        self.DISCOUNT = discount
+        self.UPDATE_TARGET_EVERY = update_target_every
         self.env = env
 
-        self.online_model = self.create_model()
-        self.target_model = self.create_model()
+        self.online_model = self._create_model()
+        self.target_model = self._create_model()
+
         self.target_model.set_weights(self.online_model.get_weights())
 
         self.replay_buffer = deque(maxlen=self.REPLAY_BUFFER_SIZE)
 
         self.target_update_counter = 0
 
-        self.epsilon = 1
-        self.EPSILON_DECAY = 0.99975
-        self.MIN_EPSILON = 0.001
+        self.epsilon = epsilon
+        self.EPSILON_DECAY = epsilon_decay
+        self.MIN_EPSILON = min_epsilon
 
-        self.AGGREGATE_STATS_EVERY = 500
-        self.SHOW_PREVIEW = True
-
-    def create_model(self):
+    def _create_model(self):
         model = Sequential()
-        model.add(Input(shape=self.env.OBSERVATION_SPACE_VALUES))
+        model.add(Input(shape=self.env.observation_space_shape))
         model.add(
             Conv2D(256, (3, 3)))
         model.add(Activation("relu"))
@@ -59,19 +67,19 @@ class DQLAgent:
         model.add(Flatten())
         model.add(Dense(64))
 
-        model.add(Dense(self.env.ACTION_SPACE_SIZE, activation="linear"))
+        model.add(Dense(self.env.action_space.n, activation="linear"))
         model.compile(loss="mse", optimizer=Adam(
             learning_rate=0.001), metrics=["accuracy"])
 
         return model
 
-    def update_replay_buffer(self, transition):
+    def _update_replay_buffer(self, transition):
         self.replay_buffer.append(transition)
 
-    def get_qs(self, state):
+    def _get_qs(self, state):
         return self.online_model.predict(np.array(state).reshape(-1, *state.shape)/255)[0]
 
-    def train_network(self, terminal_state):
+    def _train_network(self, terminal_state):
         if len(self.replay_buffer) < self.MIN_REPLAY_BUFFER_SIZE:
             return
 
@@ -111,12 +119,23 @@ class DQLAgent:
             self.target_model.set_weights(self.online_model.get_weights())
             self.target_update_counter = 0
 
-    def train(self, episodes):
-        ep_rewards = [-200]
+    def train(self, episodes, show_every=None, model_path=None, rolling_average_window=None):
+        if model_path:
+            loaded_model = load_model(model_path, custom_objects=None,
+                                      compile=True, safe_mode=True)
+            self.online_model = loaded_model
+            self.target_model = loaded_model
 
         random.seed(28)
         np.random.seed(28)
         tf.random.set_seed(28)
+
+        rewards_queue = deque(maxlen=rolling_average_window)
+        episode_for_stats_list = []
+        average_reward_list = []
+
+        plt.ion()
+        _, ax = plt.subplots(figsize=(10, 5))
 
         for episode in tqdm(range(1, episodes + 1), unit="episode"):
 
@@ -128,56 +147,81 @@ class DQLAgent:
 
             while not terminated:
                 if np.random.random() > self.epsilon:
-                    action = np.argmax(self.get_qs(current_state))
+                    action = np.argmax(self._get_qs(current_state))
                 else:
-                    action = np.random.randint(0, self.env.ACTION_SPACE_SIZE)
+                    action = np.random.randint(0, self.env.action_space.n)
 
-                new_state, reward, terminated = self.env.step(action)
+                new_state, reward, terminated, _, _ = self.env.step(action)
 
                 episode_reward += reward
 
-                if self.SHOW_PREVIEW and episode % self.AGGREGATE_STATS_EVERY == 0:
+                if show_every and episode % show_every == 0:
+                    self.env.set_render_mode("human")
                     self.env.render()
+                    self.env.set_render_mode(None)
 
-                self.update_replay_buffer(
+                self._update_replay_buffer(
                     (current_state, action, reward, new_state, terminated))
-                self.train_network(terminated)
+                self._train_network(terminated)
 
                 current_state = new_state
                 step += 1
 
-            ep_rewards.append(episode_reward)
+            rewards_queue.append(episode_reward)
 
-            if episode % self.AGGREGATE_STATS_EVERY == 0 or episode == 1 or episode == episodes:
-                rewards_for_this_episode = ep_rewards[-self.AGGREGATE_STATS_EVERY:]
+            if rolling_average_window and len(rewards_queue) >= rolling_average_window:
 
-                average_reward = sum(rewards_for_this_episode) / \
-                    len(rewards_for_this_episode)
-                min_reward = min(rewards_for_this_episode)
-                max_reward = max(rewards_for_this_episode)
+                average_reward = sum(rewards_queue) / \
+                    rolling_average_window
 
-                if min_reward >= self.MIN_REWARD or episode == episodes:
-                    self.online_model.save(
-                        f'models/{self.MODEL_NAME}_{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
+                episode_for_stats_list.append(episode)
+                average_reward_list.append(average_reward)
+
+                ax.clear()
+
+                ax.plot(episode_for_stats_list, average_reward_list,
+                        label=f"Rolling average reward with window {rolling_average_window}", color="purple")
+
+                ax.set_title("Reward Metrics Over Time")
+                ax.set_xlabel("Episode")
+                ax.set_ylabel("Average reward")
+
+                ax.set_ylim([-500, 100])
+
+                ax.legend(loc="upper left")
+
+                plt.tight_layout()
+                plt.pause(0.1)
+
+            if episode >= 5000 and episode % 100 == 0:
+                min_reward = min(rewards_queue)
+                max_reward = max(rewards_queue)
+
+                self.online_model.save(
+                    f'models/{self.MODEL_NAME}_{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
 
             if self.epsilon > self.MIN_EPSILON:
                 self.epsilon *= self.EPSILON_DECAY
                 self.epsilon = max(self.MIN_EPSILON, self.epsilon)
 
-    def test(self, model_path):
+        plt.ioff()
+        plt.show()
+
+    def test(self, model_path, render_q_values=False):
         model = load_model(model_path, custom_objects=None,
                            compile=True, safe_mode=True)
-        while True:
 
+        while True:
             observation = self.env.reset()
             terminated = False
 
             while not terminated:
                 observation_reshaped = np.array(
-                    observation).reshape(-1, *self.env.OBSERVATION_SPACE_VALUES) / 255.0
+                    observation).reshape(-1, *self.env.observation_space_shape) / 255.0
                 action = np.argmax(model.predict(observation_reshaped))
-                observation, _, terminated = self.env.step(
-                    action, step_limit=False)
-                self.env.render()
+
+                model_for_rendering = model if render_q_values else None
+                observation, _, terminated, _, _ = self.env.step(
+                    action, step_limit=False, render_q_values=render_q_values, model=model_for_rendering)
 
             time.sleep(2)
