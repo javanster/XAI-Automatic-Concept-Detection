@@ -1,6 +1,4 @@
-from AvocadoRunEnv import AvocadoRunEnv
 from AvocadoRunGymEnv import AvocadoRunGymEnv
-from QLAgent import QLAgent
 from DQLAgent import DQLAgent
 from HumanPlayer import HumanPlayer
 
@@ -35,12 +33,13 @@ dql_agent = DQLAgent(
     # "models/256x2___30.00max___-9.18avg_-314.00min__1725863125.keras"
     model_path="models/256x2___30.00max___-9.18avg_-314.00min__1725863125.keras"
 )
-dql_agent.train(
+
+""" dql_agent.train(
     episodes=20_000,
     rolling_average_window=50,
     min_save_model_episode=5_000,
     save_model_every=100
-)
+) """
 dql_agent.test()
 
 # human = HumanPlayer(env)
