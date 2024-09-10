@@ -1,4 +1,5 @@
 import pygame
+import time
 
 
 class HumanPlayer:
@@ -33,25 +34,30 @@ class HumanPlayer:
 
         return action
 
-    def play(self, timeout=50):
+    def play(self, timeout=30, episodes=10):
         """
         Allows a human player to control the agent via the keyboard.
         The agent performs a 'stay in place' action if no key is pressed within a specified timeout.
         """
-        self.env.reset()
-        terminated = False
-        default_action = 4  # Stay in place action
+        self.env.set_render_mode("human")
 
-        while not terminated:
-            action = None
-            start_ticks = pygame.time.get_ticks()
+        for episode in range(episodes):
 
-            while action is None:
-                action = self._get_human_action()
+            self.env.reset(episode=episode)
+            terminated = False
+            default_action = 4  # Stay in place action
 
-                if pygame.time.get_ticks() - start_ticks > timeout:
-                    action = default_action
+            while not terminated:
+                action = None
+                start_ticks = pygame.time.get_ticks()
 
-            _, _, terminated, _, _ = self.env.step(action)
+                while action is None:
+                    action = self._get_human_action()
 
-            self.env.render()
+                    if pygame.time.get_ticks() - start_ticks > timeout:
+                        action = default_action
+
+                _, _, terminated, _, _ = self.env.step(
+                    action=action, episode=episode)
+
+            time.sleep(2)
