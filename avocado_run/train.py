@@ -1,36 +1,46 @@
 from AvocadoRunGymEnv import AvocadoRunGymEnv
-from DQLAgent import DQLAgent
+from DoubleDQNAgent import DoubleDQNAgent
+
+config = {
+    # For env
+    "moving_enemy": True,
+    "num_enemies": 2,
+    "step_penalty": -0.05,
+    "enemy_hit_penalty": -10,
+    "avocado_reward": 10,
+
+    # For agent
+    "conv_filters": 64,
+    "dense_units": 32,
+    "replay_buffer_size": 100_000,
+    "min_replay_buffer_size": 10_000,
+    "minibatch_size": 64,
+    "discount": 0.95,
+    "training_frequency": 16,
+    "update_target_every": 2_000,
+    "learning_rate": 0.001,
+    "starting_epsilon": 1,
+    "epsilon_decay": 0.99975,
+    "min_epsilon": 0.005,
+    "average_window": 100,
+    "episodes_to_train": 40_000,
+}
 
 env = AvocadoRunGymEnv(
-    moving_enemy=True,
-    num_enemies=2,
-
-    # The render mode. Can be None, "human" or "q_values"
-    render_mode="q_values",
-
-    # If render mode is either "human" or "q_values", denotes how many episodes should pass before showing a game
+    config=config,
+    render_mode="q_values",  # Can be None, "human" or "q_values"
     show_every=100,
-
-    # Frames per second of the rendering of the game, If render mode is either "human" or "q_values"
     render_fps=4
 )
 
-dql_agent = DQLAgent(
+
+ddqn_agent = DoubleDQNAgent(
     env=env,
-    replay_buffer_size=50_000,
-    min_replay_buffer_size=1_000,
-    minibatch_size=64,
-    discount=0.99,
-    update_target_every=5,
-    epsilon=1,
-    epsilon_decay=0.99975,
-    min_epsilon=0.001,
-    model_path=None
+    model_path=None,
+    config=config
 )
 
-dql_agent.train(
-    episodes=100,
-    rolling_average_window=50,
-    min_save_model_episode=5_000,
-    save_model_every=100
+ddqn_agent.train(
+    episodes=config["episodes_to_train"],
+    average_window=config["average_window"],
 )

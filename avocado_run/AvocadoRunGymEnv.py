@@ -12,15 +12,16 @@ class AvocadoRunGymEnv(Env):
     """
 
     METADATA = {"render_modes": ["human", "rgb_array", "q_values"]}
-    STEP_PENALTY = 1
-    ENEMY_HIT_PENALTY = 300
-    AVOCADO_REWARD = 30
 
-    def __init__(self, render_mode=None, moving_enemy=False, num_enemies=1, render_fps=4, show_every=1):
+    def __init__(self, config, render_mode=None, render_fps=4, show_every=1):
+        self.STEP_PENALTY = config["step_penalty"]
+        self.ENEMY_HIT_PENALTY = config["enemy_hit_penalty"]
+        self.AVOCADO_REWARD = config["avocado_reward"]
+
         self.render_fps = render_fps
         self.show_every = show_every
-        self.moving_enemy = moving_enemy
-        self.num_enemies = num_enemies
+        self.moving_enemy = config["moving_enemy"]
+        self.num_enemies = config["num_enemies"]
         self.grid_side_length = 10
         self.action_space = Discrete(5)
         self.observation_space_shape = (
@@ -89,9 +90,9 @@ class AvocadoRunGymEnv(Env):
         new_observation = self._get_obs()
 
         terminated = False
-        reward = -self.STEP_PENALTY
+        reward = self.STEP_PENALTY
         if any(self.agent == enemy for enemy in self.enemies):
-            reward = -self.ENEMY_HIT_PENALTY
+            reward = self.ENEMY_HIT_PENALTY
             terminated = True
         elif self.agent == self.avocado:
             reward = self.AVOCADO_REWARD
