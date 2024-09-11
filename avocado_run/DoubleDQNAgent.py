@@ -18,29 +18,17 @@ class DoubleDQNAgent:
     A class for a Double Deep Q-Learning agent utilizing two CNNs for learning
     """
 
-    def __init__(self,
-                 env,
-                 replay_buffer_size,
-                 min_replay_buffer_size,
-                 minibatch_size,
-                 discount,
-                 training_frequency,
-                 update_target_every,
-                 learning_rate,
-                 epsilon,
-                 epsilon_decay,
-                 min_epsilon,
-                 model_path,
-                 ) -> None:
+    def __init__(self, env, model_path, config):
 
-        self.REPLAY_BUFFER_SIZE = replay_buffer_size
-        self.MIN_REPLAY_BUFFER_SIZE = min_replay_buffer_size
-        self.MINIBATCH_SIZE = minibatch_size
+        self.config = config
+        self.REPLAY_BUFFER_SIZE = config["replay_buffer_size"]
+        self.MIN_REPLAY_BUFFER_SIZE = config["min_replay_buffer_size"]
+        self.MINIBATCH_SIZE = config["minibatch_size"]
         self.MODEL_NAME = "256x2"
-        self.DISCOUNT = discount
-        self.TRAINING_FREQUENCY = training_frequency
-        self.UPDATE_TARGET_EVERY = update_target_every
-        self.LEARNING_RATE = learning_rate
+        self.DISCOUNT = config["discount"]
+        self.TRAINING_FREQUENCY = config["training_frequency"]
+        self.UPDATE_TARGET_EVERY = config["update_target_every"]
+        self.LEARNING_RATE = config["learning_rate"]
         self.env = env
 
         online_model = load_model(
@@ -54,26 +42,26 @@ class DoubleDQNAgent:
         self.training_counter = 0
         self.target_update_counter = 0
 
-        self.epsilon = epsilon
-        self.EPSILON_DECAY = epsilon_decay
-        self.MIN_EPSILON = min_epsilon
+        self.epsilon = config["epsilon"]
+        self.EPSILON_DECAY = config["epsilon_decay"]
+        self.MIN_EPSILON = config["min_epsilon"]
 
     def _create_model(self):
         model = Sequential()
         model.add(Input(shape=self.env.observation_space_shape))
         model.add(
-            Conv2D(256, (3, 3)))
+            Conv2D(self.config["conv_filters"], (3, 3)))
         model.add(Activation("relu"))
         model.add(MaxPooling2D(2, 2))
         model.add(Dropout(0.2))
 
-        model.add(Conv2D(256, (3, 3)))
+        model.add(Conv2D(self.config["conv_filters"], (3, 3)))
         model.add(Activation("relu"))
         model.add(MaxPooling2D(2, 2))
         model.add(Dropout(0.2))
 
         model.add(Flatten())
-        model.add(Dense(64))
+        model.add(Dense(self.config["dense_units"]))
 
         model.add(Dense(self.env.action_space.n, activation="linear"))
         model.compile(
@@ -140,20 +128,7 @@ class DoubleDQNAgent:
     def train(self, episodes, average_window=100):
         wandb.init(
             project="AvocadoRun_DDQNAgent",
-            config={
-                "replay_buffer_size": self.REPLAY_BUFFER_SIZE,
-                "min_replay_buffer_size": self.MIN_REPLAY_BUFFER_SIZE,
-                "minibatch_size": self.MINIBATCH_SIZE,
-                "discount": self.DISCOUNT,
-                "training_frequency": self.TRAINING_FREQUENCY,
-                "update_target_every": self.UPDATE_TARGET_EVERY,
-                "learning_rate": self.LEARNING_RATE,
-                "starting_epsilon": self.epsilon,
-                "epsilon_decay": self.EPSILON_DECAY,
-                "min_epsilon": self.MIN_EPSILON,
-                "average_window": average_window,
-                "episodes": episodes,
-            }
+            config=self.config
         )
 
         random.seed(28)
