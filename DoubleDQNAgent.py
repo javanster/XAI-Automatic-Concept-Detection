@@ -15,17 +15,8 @@ import os
 
 
 class DoubleDQNAgent:
-    def __init__(self, env, config, model_path=None):
-
-        self.config = config
-        self.REPLAY_BUFFER_SIZE = config["replay_buffer_size"]
-        self.MIN_REPLAY_BUFFER_SIZE = config["min_replay_buffer_size"]
-        self.MINIBATCH_SIZE = config["minibatch_size"]
+    def __init__(self, env, learning_rate=0.01, model_path=None):
         self.MODEL_NAME = "64x2"
-        self.DISCOUNT = config["discount"]
-        self.TRAINING_FREQUENCY = config["training_frequency"]
-        self.UPDATE_TARGET_EVERY = config["update_target_every"]
-        self.LEARNING_RATE = config["learning_rate"]
         self.env = env
 
         if not isinstance(env.action_space, gym.spaces.Discrete):
@@ -33,23 +24,17 @@ class DoubleDQNAgent:
                 "DoubleDQNAgent only supports discrete action spaces.")
 
         online_model = load_model(
-            model_path) if model_path else self._create_model()
+            model_path) if model_path else self._create_model(learning_rate=learning_rate)
         self.online_model = online_model
-        self.target_model = self._create_model()
+        self.target_model = self._create_model(learning_rate=learning_rate)
         self.target_model.set_weights(self.online_model.get_weights())
-
-        self.replay_buffer = deque(maxlen=self.REPLAY_BUFFER_SIZE)
 
         self.training_counter = 0
         self.target_update_counter = 0
 
-        self.epsilon = config["starting_epsilon"]
-        self.EPSILON_DECAY = config["epsilon_decay"]
-        self.MIN_EPSILON = config["min_epsilon"]
-
         self.best_static_average = float('-inf')
 
-    def _create_model(self):
+    def _create_model(self, learning_rate):
         model = Sequential()
         model.add(Input(shape=self.env.observation_space.shape))
         model.add(Flatten())
@@ -61,7 +46,7 @@ class DoubleDQNAgent:
         model.add(Dense(self.env.action_space.n, activation="linear"))
         model.compile(
             loss="mse",
-            optimizer=Adam(learning_rate=self.LEARNING_RATE),
+            optimizer=Adam(learning_rate=learning_rate),
             metrics=["accuracy"]
         )
 
@@ -112,11 +97,24 @@ class DoubleDQNAgent:
             shuffle=False if terminal_state else None,
         )
 
-    def train(self, episodes, average_window=100, track_metrics=False):
+    def train(self, config, track_metrics=False):
+        self.REPLAY_BUFFER_SIZE = config["replay_buffer_size"]
+        self.MIN_REPLAY_BUFFER_SIZE = config["min_replay_buffer_size"]
+        self.MINIBATCH_SIZE = config["minibatch_size"]
+        self.DISCOUNT = config["discount"]
+        self.TRAINING_FREQUENCY = config["training_frequency"]
+        self.UPDATE_TARGET_EVERY = config["update_target_every"]
+        self.LEARNING_RATE = config["learning_rate"]
+
+        self.replay_buffer = deque(maxlen=self.REPLAY_BUFFER_SIZE)
+        self.epsilon = config["starting_epsilon"]
+        self.EPSILON_DECAY = config["epsilon_decay"]
+        self.MIN_EPSILON = config["min_epsilon"]
+
         if track_metrics:
             wandb.init(
-                project=self.config["project_name"],
-                config=self.config,
+                project=config["project_name"],
+                config=config,
                 mode="online"
             )
 
@@ -127,9 +125,9 @@ class DoubleDQNAgent:
         np.random.seed(28)
         tf.random.set_seed(28)
 
-        rewards_queue = deque(maxlen=average_window)
+        rewards_queue = deque(maxlen=config["average_window"])
 
-        for episode in tqdm(range(1, episodes + 1), unit="episode"):
+        for episode in tqdm(range(1, config["episodes_to_train"] + 1), unit="episode"):
 
             episode_reward = 0
             current_state, _ = self.env.reset()
@@ -173,8 +171,8 @@ class DoubleDQNAgent:
                 "episode_reward": episode_reward
             }
 
-            if len(rewards_queue) >= average_window:
-                average_reward = sum(rewards_queue) / average_window
+            if len(rewards_queue) >= config["average_window"]:
+                average_reward = sum(rewards_queue) / config["average_window"]
                 min_reward = min(rewards_queue)
                 max_reward = max(rewards_queue)
 
@@ -182,7 +180,7 @@ class DoubleDQNAgent:
                 log_data["min_reward_over_rolling_window"] = min_reward
                 log_data["max_reward_over_rolling_window"] = max_reward
 
-                if episode % average_window == 0:
+                if episode % config["average_window"] == 0:
                     log_data["static_average_reward"] = average_reward
 
                     # Checks every average window episode whether a new best static average is reached
