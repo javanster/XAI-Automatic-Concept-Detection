@@ -23,6 +23,7 @@ class AvocadoRunEnv(Env):
         self.STEP_PENALTY = -1
         self.ENEMY_HIT_PENALTY = -100
         self.AVOCADO_REWARD = 100
+        self.reward_range = (-300, 99)
 
         self.AVOCADO_COLOR = (0, 255, 0)
         self.AGENT_COLOR = (78, 172, 248)
@@ -96,11 +97,11 @@ class AvocadoRunEnv(Env):
         reward = self.STEP_PENALTY
 
         if any(self.agent == enemy for enemy in self.enemies):
-            reward = self.ENEMY_HIT_PENALTY
+            reward += self.ENEMY_HIT_PENALTY
             terminated = True
 
         elif self.agent == self.avocado:
-            reward = self.AVOCADO_REWARD
+            reward += self.AVOCADO_REWARD
             terminated = True
 
         elif self.episode_step >= 200:
