@@ -1,5 +1,5 @@
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Activation, Flatten
+from keras.layers import Dense, Dropout, Flatten
 from keras.optimizers import Adam
 from collections import deque
 import time
@@ -10,26 +10,26 @@ from tqdm import tqdm
 from keras.layers import Input
 from keras.saving import load_model
 import wandb
-from wandb.integration.keras import WandbModelCheckpoint
+import gymnasium as gym
 
 
 class DoubleDQNAgent:
-    """
-    A class for a Double Deep Q-Learning agent utilizing two CNNs for learning
-    """
-
-    def __init__(self, env, model_path, config):
+    def __init__(self, env, config, model_path=None):
 
         self.config = config
         self.REPLAY_BUFFER_SIZE = config["replay_buffer_size"]
         self.MIN_REPLAY_BUFFER_SIZE = config["min_replay_buffer_size"]
         self.MINIBATCH_SIZE = config["minibatch_size"]
-        self.MODEL_NAME = "256x2"
+        self.MODEL_NAME = "64x2"
         self.DISCOUNT = config["discount"]
         self.TRAINING_FREQUENCY = config["training_frequency"]
         self.UPDATE_TARGET_EVERY = config["update_target_every"]
         self.LEARNING_RATE = config["learning_rate"]
         self.env = env
+
+        if not isinstance(env.action_space, gym.spaces.Discrete):
+            raise ValueError(
+                "DoubleDQNAgent only supports discrete action spaces.")
 
         online_model = load_model(
             model_path) if model_path else self._create_model()
@@ -42,26 +42,20 @@ class DoubleDQNAgent:
         self.training_counter = 0
         self.target_update_counter = 0
 
-        self.epsilon = config["epsilon"]
+        self.epsilon = config["starting_epsilon"]
         self.EPSILON_DECAY = config["epsilon_decay"]
         self.MIN_EPSILON = config["min_epsilon"]
 
+        self.best_static_average = float('-inf')
+
     def _create_model(self):
         model = Sequential()
-        model.add(Input(shape=self.env.observation_space_shape))
-        model.add(
-            Conv2D(self.config["conv_filters"], (3, 3)))
-        model.add(Activation("relu"))
-        model.add(MaxPooling2D(2, 2))
-        model.add(Dropout(0.2))
-
-        model.add(Conv2D(self.config["conv_filters"], (3, 3)))
-        model.add(Activation("relu"))
-        model.add(MaxPooling2D(2, 2))
-        model.add(Dropout(0.2))
-
+        model.add(Input(shape=self.env.observation_space.shape))
         model.add(Flatten())
-        model.add(Dense(self.config["dense_units"]))
+        model.add(Dense(64, activation='relu'))
+        model.add(Dropout(0.2))
+        model.add(Dense(64, activation='relu'))
+        model.add(Dropout(0.2))
 
         model.add(Dense(self.env.action_space.n, activation="linear"))
         model.compile(
@@ -115,21 +109,15 @@ class DoubleDQNAgent:
             batch_size=self.MINIBATCH_SIZE,
             verbose=0,
             shuffle=False if terminal_state else None,
-            callbacks=[
-                WandbModelCheckpoint(
-                    filepath="models/best_model.keras",
-                    save_best_only=True,
-                    monitor='rolling_average_reward',
-                    mode='max'
-                )
-            ]
         )
 
-    def train(self, episodes, average_window=100):
-        wandb.init(
-            project="AvocadoRun_DDQNAgent",
-            config=self.config
-        )
+    def train(self, episodes, average_window=100, track_metrics=False):
+        if track_metrics:
+            wandb.init(
+                project=self.config["project_name"],
+                config=self.config,
+                mode="online"
+            )
 
         random.seed(28)
         np.random.seed(28)
@@ -140,19 +128,19 @@ class DoubleDQNAgent:
         for episode in tqdm(range(1, episodes + 1), unit="episode"):
 
             episode_reward = 0
-            current_state = self.env.reset(
-                model=self.online_model, episode=episode)
+            current_state, _ = self.env.reset()
 
             terminated = False
+            truncated = False
 
-            while not terminated:
+            while not terminated and not truncated:
                 if np.random.random() > self.epsilon:
                     action = np.argmax(self._get_qs(current_state))
                 else:
                     action = np.random.randint(0, self.env.action_space.n)
 
-                new_state, reward, terminated, _, _ = self.env.step(
-                    action=action, model=self.online_model, episode=episode)
+                new_state, reward, terminated, truncated, _ = self.env.step(
+                    action=action)
 
                 episode_reward += reward
 
@@ -177,14 +165,12 @@ class DoubleDQNAgent:
             rewards_queue.append(episode_reward)
 
             log_data = {
-                "episode": episode,
                 "epsilon": self.epsilon,
                 "episode_reward": episode_reward
             }
 
             if len(rewards_queue) >= average_window:
-                average_reward = sum(rewards_queue) / \
-                    average_window
+                average_reward = sum(rewards_queue) / average_window
                 min_reward = min(rewards_queue)
                 max_reward = max(rewards_queue)
 
@@ -195,31 +181,43 @@ class DoubleDQNAgent:
                 if episode % average_window == 0:
                     log_data["static_average_reward"] = average_reward
 
-                # Ensures that the last model is saved
-                if episode == episodes:
-                    self.online_model.save(
-                        f'models/{self.MODEL_NAME}_{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
+                    # Checks every average window episode whether a new best static average is reached
+                    if average_reward > self.best_static_average:
+                        self.best_static_average = average_reward
+                        self.online_model.save(
+                            f'models/{self.MODEL_NAME}_{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
 
-            wandb.log(log_data)
+            if track_metrics:
+                wandb.log(log_data)
 
             if self.epsilon > self.MIN_EPSILON:
                 self.epsilon *= self.EPSILON_DECAY
                 self.epsilon = max(self.MIN_EPSILON, self.epsilon)
 
-    def test(self, episodes=10):
-        for episode in range(episodes):
+        self.env.close()
 
-            observation = self.env.reset(
-                episode=episode, model=self.online_model)
+    def test(self, episodes=10, env=None):
+        if env:
+            self.env = env
+
+        for _ in range(episodes):
+
+            observation, _ = self.env.reset()
             terminated = False
+
+            self.env.render()
 
             while not terminated:
                 observation_reshaped = np.array(
-                    observation).reshape(-1, *self.env.observation_space_shape) / 255.0
+                    observation).reshape(-1, *self.env.observation_space.shape) / 255.0
                 action = np.argmax(
                     self.online_model.predict(observation_reshaped))
 
                 observation, _, terminated, _, _ = self.env.step(
-                    action=action, episode=episode, step_limit=False, model=self.online_model)
+                    action=action)
+
+                self.env.render()
 
             time.sleep(2)
+
+        self.env.close()

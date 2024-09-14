@@ -21,11 +21,11 @@ class HumanPlayer:
                 self.env.close()
                 return None
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_s:
+                if event.key == pygame.K_w:
                     action = 0  # Up
                 elif event.key == pygame.K_d:
                     action = 1  # Right
-                elif event.key == pygame.K_w:
+                elif event.key == pygame.K_s:
                     action = 2  # Down
                 elif event.key == pygame.K_a:
                     action = 3  # Left
@@ -39,11 +39,12 @@ class HumanPlayer:
         Allows a human player to control the agent via the keyboard.
         The agent performs a 'stay in place' action if no key is pressed within a specified timeout.
         """
-        self.env.set_render_mode("human")
+        for _ in range(episodes):
 
-        for episode in range(episodes):
+            self.env.reset()
 
-            self.env.reset(episode=episode)
+            self.env.render()
+
             terminated = False
             default_action = 4  # Stay in place action
 
@@ -58,6 +59,10 @@ class HumanPlayer:
                         action = default_action
 
                 _, _, terminated, _, _ = self.env.step(
-                    action=action, episode=episode)
+                    action=action)
+
+                self.env.render()
 
             time.sleep(2)
+
+        self.env.close()

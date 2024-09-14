@@ -10,6 +10,8 @@ from tqdm import tqdm
 from keras.layers import Input
 from keras.saving import load_model
 import matplotlib.pyplot as plt
+import wandb
+from wandb.integration.keras import WandbMetricsLogger, WandbModelCheckpoint
 
 
 class DQLAgent:
@@ -70,8 +72,11 @@ class DQLAgent:
         model.add(Dense(64))
 
         model.add(Dense(self.env.action_space.n, activation="linear"))
-        model.compile(loss="mse", optimizer=Adam(
-            learning_rate=0.001), metrics=["accuracy"])
+        model.compile(
+            loss="mse",
+            optimizer=Adam(learning_rate=0.001),
+            metrics=["accuracy"]
+        )
 
         return model
 
@@ -111,17 +116,36 @@ class DQLAgent:
             X.append(current_state)
             y.append(current_qs)
 
-        self.online_model.fit(np.array(X) / 255, np.array(y),
-                              batch_size=self.MINIBATCH_SIZE, verbose=0, shuffle=False if terminal_state else None)
-
-        if terminal_state:
-            self.target_update_counter += 1
+        self.online_model.fit(
+            np.array(X) / 255, np.array(y),
+            batch_size=self.MINIBATCH_SIZE,
+            verbose=0,
+            shuffle=False if terminal_state else None,
+            callbacks=[
+                WandbMetricsLogger(log_freq=10),
+                WandbModelCheckpoint("models/test.keras")
+            ]
+        )
 
         if self.target_update_counter > self.UPDATE_TARGET_EVERY:
             self.target_model.set_weights(self.online_model.get_weights())
             self.target_update_counter = 0
 
     def train(self, episodes, min_save_model_episode, save_model_every, rolling_average_window=None):
+        wandb.init(
+            project="AvocadoRun_DQLAgent",
+            config={
+                "replay_buffer_size": self.REPLAY_BUFFER_SIZE,
+                "min_replay_buffer_size": self.MIN_REPLAY_BUFFER_SIZE,
+                "minibatch_size": self.MINIBATCH_SIZE,
+                "discount": self.DISCOUNT,
+                "update_target_every": self.UPDATE_TARGET_EVERY,
+                "epsilon": self.epsilon,
+                "epsilon_decay": self.EPSILON_DECAY,
+                "min_epsilon": self.MIN_EPSILON,
+            }
+        )
+
         random.seed(28)
         np.random.seed(28)
         tf.random.set_seed(28)
@@ -154,6 +178,8 @@ class DQLAgent:
 
                 self._update_replay_buffer(
                     (current_state, action, reward, new_state, terminated))
+
+                self.target_update_counter += 1  # Updates every step
                 self._train_network(terminated)
 
                 current_state = new_state

@@ -13,7 +13,7 @@ class AvocadoRunGymEnv(Env):
 
     METADATA = {"render_modes": ["human", "rgb_array", "q_values"]}
 
-    def __init__(self, config, render_mode=None, render_fps=4, show_every=1):
+    def __init__(self, config, render_mode=None, render_fps=4, show_every=1, agent_starting_position=None):
         self.STEP_PENALTY = config["step_penalty"]
         self.ENEMY_HIT_PENALTY = config["enemy_hit_penalty"]
         self.AVOCADO_REWARD = config["avocado_reward"]
@@ -36,6 +36,8 @@ class AvocadoRunGymEnv(Env):
         self.window = None
         self.clock = None
 
+        self.agent_starting_position = agent_starting_position
+
     def set_render_mode(self, render_mode=None):
         assert render_mode is None or render_mode in self.METADATA["render_modes"]
         self.render_mode = render_mode
@@ -46,7 +48,8 @@ class AvocadoRunGymEnv(Env):
         self.avocado = Entity(
             env_size=self.grid_side_length)
 
-        self.agent = Entity(env_size=self.grid_side_length)
+        self.agent = Entity(env_size=self.grid_side_length,
+                            starting_position=self.agent_starting_position)
         while self.agent == self.avocado:
             self.agent = Entity(self.grid_side_length)
 
@@ -112,8 +115,10 @@ class AvocadoRunGymEnv(Env):
             if not model:
                 raise ValueError(
                     "When in render mode \"q_values\", a model needs to be provided")
-            q_values_dict = self._get_q_values_dict(model=model)
-            self._draw_entities(q_value_dict=q_values_dict)
+            q_values_dict, best_action_for_agent = self._get_q_values_dict(
+                model=model)
+            self._draw_entities(q_value_dict=q_values_dict,
+                                best_action_for_agent=best_action_for_agent)
         elif self.render_mode == "human":
             self._draw_entities()
 
@@ -163,9 +168,15 @@ class AvocadoRunGymEnv(Env):
                 q_value_dict[(x, y)] = (
                     (value - min_q_value_in_dict) / (max_q_value_in_dict - min_q_value_in_dict)) * 255
 
-        return q_value_dict
+        obs_copy = obs.copy()
+        obs_copy[self.agent.x, self.agent.y] = (0, 255, 175)
+        observation_reshaped = obs_copy.reshape(
+            -1, *self.observation_space_shape) / 255.0
+        best_action_for_agent = np.argmax(model.predict(observation_reshaped))
 
-    def _draw_entities(self, q_value_dict=None):
+        return q_value_dict, best_action_for_agent
+
+    def _draw_entities(self, q_value_dict=None, best_action_for_agent=None):
         if self.window is None:
             pygame.init()
             pygame.display.init()
@@ -174,6 +185,12 @@ class AvocadoRunGymEnv(Env):
             )
         if self.clock is None:
             self.clock = pygame.time.Clock()
+
+        if not hasattr(self, 'arrow_image'):
+            self.arrow_image = pygame.image.load(
+                'avocado_run/sprites/arrow.png').convert_alpha()
+            self.rectangle_image = pygame.image.load(
+                'avocado_run/sprites/rectangle.png').convert_alpha()
 
         canvas = pygame.Surface((self.window_size, self.window_size))
         canvas.fill((0, 0, 0))
@@ -229,6 +246,29 @@ class AvocadoRunGymEnv(Env):
                     pix_square_size
                 )
             )
+
+        # Render the best action arrow/rectangle if applicable
+        if best_action_for_agent is not None:
+            if best_action_for_agent == 0:
+                rotated_arrow = self.arrow_image  # No rotation needed
+            elif best_action_for_agent == 1:
+                rotated_arrow = pygame.transform.rotate(
+                    self.arrow_image, -90)  # 90 degrees clockwise
+            elif best_action_for_agent == 2:
+                rotated_arrow = pygame.transform.rotate(
+                    self.arrow_image, 180)  # 180 degrees clockwise
+            elif best_action_for_agent == 3:
+                rotated_arrow = pygame.transform.rotate(
+                    self.arrow_image, -270)  # 270 degrees clockwise
+            elif best_action_for_agent == 4:
+                rotated_arrow = self.rectangle_image  # Use the rectangle image
+
+            # Blit the rotated arrow or rectangle on the agent's position
+            arrow_rect = rotated_arrow.get_rect(center=(
+                pix_square_size * self.agent.x + pix_square_size / 2,
+                pix_square_size * self.agent.y + pix_square_size / 2
+            ))
+            canvas.blit(rotated_arrow, arrow_rect)
 
         self.window.blit(canvas, canvas.get_rect())
         pygame.event.pump()
