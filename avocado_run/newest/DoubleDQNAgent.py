@@ -194,11 +194,18 @@ class DoubleDQNAgent:
                 self.epsilon *= self.EPSILON_DECAY
                 self.epsilon = max(self.MIN_EPSILON, self.epsilon)
 
-    def test(self, episodes=10):
+        self.env.close()
+
+    def test(self, episodes=10, env=None):
+        if env:
+            self.env = env
+
         for _ in range(episodes):
 
             observation, _ = self.env.reset()
             terminated = False
+
+            self.env.render()
 
             while not terminated:
                 observation_reshaped = np.array(
@@ -212,3 +219,5 @@ class DoubleDQNAgent:
                 self.env.render()
 
             time.sleep(2)
+
+        self.env.close()
