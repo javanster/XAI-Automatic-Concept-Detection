@@ -11,6 +11,7 @@ from keras.layers import Input
 from keras.saving import load_model
 import wandb
 import gymnasium as gym
+import os
 
 
 class DoubleDQNAgent:
@@ -118,6 +119,9 @@ class DoubleDQNAgent:
                 config=self.config,
                 mode="online"
             )
+
+        if not os.path.exists('models'):
+            os.makedirs('models')
 
         random.seed(28)
         np.random.seed(28)
