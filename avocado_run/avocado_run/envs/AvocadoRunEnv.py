@@ -17,13 +17,13 @@ class AvocadoRunEnv(Env):
     def __init__(
             self,
             render_mode=None,
-            render_fps=4
+            render_fps=4,
     ):
         super().__init__()
-        self.STEP_PENALTY = -1
-        self.ENEMY_HIT_PENALTY = -100
+        self.STEP_PENALTY = -0.1
+        self.ENEMY_HIT_PENALTY = -20
         self.AVOCADO_REWARD = 100
-        self.reward_range = (-300, 99)
+        self.reward_range = (-40, 99.9)
 
         self.AVOCADO_COLOR = (0, 255, 0)
         self.AGENT_COLOR = (78, 172, 248)
