@@ -1,5 +1,5 @@
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten
+from keras.layers import Dense, Flatten, Conv2D, Input
 from keras.optimizers import Adam
 from collections import deque
 import time
@@ -32,24 +32,21 @@ class DoubleDQNAgent:
         self.training_counter = 0
         self.target_update_counter = 0
 
-        self.best_static_average = float('-inf')
+        self.best_static_average = float("-inf")
 
     def _create_model(self, learning_rate):
         model = Sequential()
         model.add(Input(shape=self.env.observation_space.shape))
+        model.add(Conv2D(32, kernel_size=3, activation="relu", padding="same"))
+        model.add(Conv2D(64, kernel_size=3, activation="relu", padding="same"))
         model.add(Flatten())
-        model.add(Dense(64, activation='relu'))
-        model.add(Dropout(0.2))
-        model.add(Dense(64, activation='relu'))
-        model.add(Dropout(0.2))
-
+        model.add(Dense(128, activation="relu"))
         model.add(Dense(self.env.action_space.n, activation="linear"))
         model.compile(
             loss="mse",
             optimizer=Adam(learning_rate=learning_rate),
             metrics=["accuracy"]
         )
-
         return model
 
     def _update_replay_buffer(self, transition):
@@ -58,11 +55,11 @@ class DoubleDQNAgent:
     def _get_qs(self, state):
         return self.online_model.predict(np.array(state).reshape(-1, *state.shape)/255)[0]
 
-    def _train_network(self, terminal_state):
-        if len(self.replay_buffer) < self.MIN_REPLAY_BUFFER_SIZE:
+    def _train_network(self, terminal_state, min_replay_buffer_size, minibatch_size, discount):
+        if len(self.replay_buffer) < min_replay_buffer_size:
             return
 
-        minibatch = random.sample(self.replay_buffer, self.MINIBATCH_SIZE)
+        minibatch = random.sample(self.replay_buffer, minibatch_size)
 
         current_states = np.array([transition[0]
                                   for transition in minibatch]) / 255
@@ -80,7 +77,7 @@ class DoubleDQNAgent:
                 # In accordance with double dqn
                 max_future_action = np.argmax(current_qs_list[index])
                 max_future_q = future_qs_list[index][max_future_action]
-                new_q = reward + self.DISCOUNT * max_future_q
+                new_q = reward + discount * max_future_q
             else:
                 new_q = reward
 
@@ -92,24 +89,31 @@ class DoubleDQNAgent:
 
         self.online_model.fit(
             np.array(X) / 255, np.array(y),
-            batch_size=self.MINIBATCH_SIZE,
+            batch_size=minibatch_size,
             verbose=0,
             shuffle=False if terminal_state else None,
         )
 
     def train(self, config, track_metrics=False):
-        self.REPLAY_BUFFER_SIZE = config["replay_buffer_size"]
-        self.MIN_REPLAY_BUFFER_SIZE = config["min_replay_buffer_size"]
-        self.MINIBATCH_SIZE = config["minibatch_size"]
-        self.DISCOUNT = config["discount"]
-        self.TRAINING_FREQUENCY = config["training_frequency"]
-        self.UPDATE_TARGET_EVERY = config["update_target_every"]
-        self.LEARNING_RATE = config["learning_rate"]
+        replay_buffer_size = config["replay_buffer_size"]
+        min_replay_buffer_size = config["min_replay_buffer_size"]
+        minibatch_size = config["minibatch_size"]
+        discount = config["discount"]
+        training_frequency = config["training_frequency"]
+        update_target_every = config["update_target_every"]
+        episodes_to_train = config["episodes_to_train"]
 
-        self.replay_buffer = deque(maxlen=self.REPLAY_BUFFER_SIZE)
-        self.epsilon = config["starting_epsilon"]
-        self.EPSILON_DECAY = config["epsilon_decay"]
-        self.MIN_EPSILON = config["min_epsilon"]
+        self.replay_buffer = deque(maxlen=replay_buffer_size)
+
+        epsilon = config["starting_epsilon"]
+        starting_epsilon = config["starting_epsilon"]
+        prop_episodes_epsilon_decay = config["prop_episodes_epsilon_decay"]
+        min_epsilon = config["min_epsilon"]
+
+        num_decay_episodes = episodes_to_train * prop_episodes_epsilon_decay
+
+        epsilon_decay = (
+            min_epsilon / starting_epsilon) ** (1 / num_decay_episodes)
 
         if track_metrics:
             wandb.init(
@@ -118,8 +122,8 @@ class DoubleDQNAgent:
                 mode="online"
             )
 
-        if not os.path.exists('models'):
-            os.makedirs('models')
+        if not os.path.exists("models"):
+            os.makedirs("models")
 
         random.seed(28)
         np.random.seed(28)
@@ -127,7 +131,7 @@ class DoubleDQNAgent:
 
         rewards_queue = deque(maxlen=config["average_window"])
 
-        for episode in tqdm(range(1, config["episodes_to_train"] + 1), unit="episode"):
+        for episode in tqdm(range(1, episodes_to_train + 1), unit="episode"):
 
             episode_reward = 0
             current_state, _ = self.env.reset()
@@ -136,7 +140,7 @@ class DoubleDQNAgent:
             truncated = False
 
             while not terminated and not truncated:
-                if np.random.random() > self.epsilon:
+                if np.random.random() > epsilon:
                     action = np.argmax(self._get_qs(current_state))
                 else:
                     action = np.random.randint(0, self.env.action_space.n)
@@ -153,11 +157,12 @@ class DoubleDQNAgent:
                 self.training_counter += 1
                 self.target_update_counter += 1
 
-                if (self.training_counter >= self.TRAINING_FREQUENCY):
-                    self._train_network(terminated)
+                if (self.training_counter >= training_frequency):
+                    self._train_network(
+                        terminated, min_replay_buffer_size, minibatch_size, discount)
                     self.training_counter = 0
 
-                if self.target_update_counter >= self.UPDATE_TARGET_EVERY:
+                if self.target_update_counter >= update_target_every:
                     self.target_model.set_weights(
                         self.online_model.get_weights())
                     self.target_update_counter = 0
@@ -167,7 +172,7 @@ class DoubleDQNAgent:
             rewards_queue.append(episode_reward)
 
             log_data = {
-                "epsilon": self.epsilon,
+                "epsilon": epsilon,
                 "episode_reward": episode_reward
             }
 
@@ -187,14 +192,14 @@ class DoubleDQNAgent:
                     if average_reward > self.best_static_average:
                         self.best_static_average = average_reward
                         self.online_model.save(
-                            f'models/{self.MODEL_NAME}_{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras')
+                            f"models/{self.MODEL_NAME}_{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras")
 
             if track_metrics:
                 wandb.log(log_data)
 
-            if self.epsilon > self.MIN_EPSILON:
-                self.epsilon *= self.EPSILON_DECAY
-                self.epsilon = max(self.MIN_EPSILON, self.epsilon)
+            if epsilon > min_epsilon:
+                epsilon *= epsilon_decay
+                epsilon = max(min_epsilon, epsilon)
 
         self.env.close()
 
