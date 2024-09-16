@@ -18,6 +18,7 @@ class AvocadoRunEnv(Env):
             self,
             render_mode=None,
             render_fps=4,
+            num_avocados=1,
     ):
         super().__init__()
         self.STEP_PENALTY = -0.1
@@ -30,6 +31,7 @@ class AvocadoRunEnv(Env):
         self.ENEMY_COLOR = (255, 0, 0)
 
         self.render_fps = render_fps
+        self.num_avocados = num_avocados
         self.num_enemies = 2
         self.grid_side_length = 10
         self.action_space = Discrete(5)
@@ -47,17 +49,19 @@ class AvocadoRunEnv(Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        self.avocado = Entity(
-            env_size=self.grid_side_length)
-
         self.agent = Entity(env_size=self.grid_side_length)
-        while self.agent == self.avocado:
-            self.agent = Entity(self.grid_side_length)
+
+        self.avocados = []
+        for _ in range(self.num_avocados):
+            avocado = Entity(env_size=self.grid_side_length)
+            while avocado == self.agent or any(existing_avocado == avocado for existing_avocado in self.avocados):
+                avocado = Entity(env_size=self.grid_side_length)
+            self.avocados.append(avocado)
 
         self.enemies = []
         for _ in range(self.num_enemies):
             enemy = Entity(self.grid_side_length)
-            while enemy == self.agent or enemy == self.avocado:
+            while enemy == self.agent or any(avocado == enemy for avocado in self.avocados):
                 enemy = Entity(self.grid_side_length)
             self.enemies.append(enemy)
 
@@ -72,7 +76,8 @@ class AvocadoRunEnv(Env):
         obs = np.zeros(
             (self.grid_side_length, self.grid_side_length, 3),
             dtype=np.uint8)
-        obs[self.avocado.x, self.avocado.y] = self.AVOCADO_COLOR
+        for avocado in self.avocados:
+            obs[avocado.x, avocado.y] = self.AVOCADO_COLOR
         obs[self.agent.x, self.agent.y] = self.AGENT_COLOR
         for enemy in self.enemies:
             obs[enemy.x, enemy.y] = self.ENEMY_COLOR
@@ -100,11 +105,12 @@ class AvocadoRunEnv(Env):
             reward += self.ENEMY_HIT_PENALTY
             terminated = True
 
-        elif self.agent == self.avocado:
+        elif self.agent in self.avocados:  # Checks if the agent is in a cell with an avocado
             reward += self.AVOCADO_REWARD
-            terminated = True
+            self.avocados.remove(self.agent)
+            terminated = not self.avocados  # Checks whether all avocados are cleared
 
-        elif self.episode_step >= 200:
+        if self.episode_step >= 200:
             truncated = True
 
         info = {}
@@ -137,16 +143,17 @@ class AvocadoRunEnv(Env):
         pix_square_size = (self.window_size / self.grid_side_length)
 
         # Drawing the avocado
-        pygame.draw.rect(
-            canvas,
-            self.AVOCADO_COLOR,
-            pygame.Rect(
-                pix_square_size * self.avocado.x,
-                pix_square_size * self.avocado.y,
-                pix_square_size,
-                pix_square_size
+        for avocado in self.avocados:
+            pygame.draw.rect(
+                canvas,
+                self.AVOCADO_COLOR,
+                pygame.Rect(
+                    pix_square_size * avocado.x,
+                    pix_square_size * avocado.y,
+                    pix_square_size,
+                    pix_square_size
+                )
             )
-        )
 
         # Drawing the agent
         pygame.draw.rect(
