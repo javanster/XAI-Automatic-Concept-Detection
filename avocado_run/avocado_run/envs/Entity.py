@@ -8,6 +8,10 @@ class Entity:
     """
 
     def __init__(self, env_size, starting_position=None) -> None:
+        if starting_position and any(starting_coord >= env_size
+                                     for starting_coord in starting_position):
+            raise ValueError(
+                "A starting coordinate may not be equal to or exceed env_size")
         if starting_position:
             self.x = starting_position[0]
             self.y = starting_position[1]
