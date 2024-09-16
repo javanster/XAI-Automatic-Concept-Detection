@@ -58,7 +58,8 @@ class QValueRenderWrapper(Wrapper):
 
             canvas = pygame.Surface((self.window_size, self.window_size))
             canvas.fill((0, 0, 0))
-            pix_square_size = (self.window_size / self.env.grid_side_length)
+            pix_square_size = (self.window_size /
+                               self.env.unwrapped.grid_side_length)
 
             self._draw_entities(canvas, pix_square_size)
 
@@ -75,22 +76,26 @@ class QValueRenderWrapper(Wrapper):
         Returns a dictionary mapping positions to Q-values and the best action.
         """
         obs_without_agent = np.zeros(
-            (self.env.grid_side_length, self.env.grid_side_length, 3), dtype=np.uint8)
-        obs_without_agent[self.env.avocado.x,
-                          self.env.avocado.y] = self.env.AVOCADO_COLOR
-        for enemy in self.env.enemies:
-            obs_without_agent[enemy.x, enemy.y] = self.env.ENEMY_COLOR
+            (self.env.unwrapped.grid_side_length, self.env.unwrapped.grid_side_length, 3), dtype=np.uint8)
+        for avocado in self.env.unwrapped.avocados:
+            obs_without_agent[avocado.x,
+                              avocado.y] = self.env.unwrapped.AVOCADO_COLOR
+        for enemy in self.env.unwrapped.enemies:
+            obs_without_agent[enemy.x,
+                              enemy.y] = self.env.unwrapped.ENEMY_COLOR
 
         q_value_dict = {}
         batch_obs = []
         agent_positions = []
 
-        for x in range(self.env.grid_side_length):
-            for y in range(self.env.grid_side_length):
+        for x in range(self.env.unwrapped.grid_side_length):
+            for y in range(self.env.unwrapped.grid_side_length):
                 # Checks that the coordinates are of an empty cell
-                if not (any((x == enemy.x and y == enemy.y) for enemy in self.env.enemies) or (x == self.env.avocado.x and y == self.env.avocado.y) or (x == self.env.agent.x and y == self.env.agent.y)):
+                if not (any((x == enemy.x and y == enemy.y) for enemy in self.env.unwrapped.enemies) or
+                        any((x == avocado.x and y == avocado.y) for avocado in self.env.unwrapped.avocados) or
+                        (x == self.env.unwrapped.agent.x and y == self.env.unwrapped.agent.y)):
                     obs_copy = obs_without_agent.copy()
-                    obs_copy[x, y] = self.env.AGENT_COLOR
+                    obs_copy[x, y] = self.env.unwrapped.AGENT_COLOR
                     observation_reshaped = obs_copy.reshape(
                         -1, *self.env.observation_space.shape) / 255.0
 
@@ -116,7 +121,7 @@ class QValueRenderWrapper(Wrapper):
         """
         Draws the Q-value heatmap on the environment's grid.
         """
-        grid_size = self.env.grid_side_length
+        grid_size = self.env.unwrapped.grid_side_length
         pix_square_size = self.window_size / grid_size
 
         if not q_value_dict:
@@ -148,11 +153,11 @@ class QValueRenderWrapper(Wrapper):
         if best_action is None:
             return
 
-        grid_size = self.env.grid_side_length
+        grid_size = self.env.unwrapped.grid_side_length
         pix_square_size = self.window_size / grid_size
 
-        agent_x = self.env.agent.x
-        agent_y = self.env.agent.y
+        agent_x = self.env.unwrapped.agent.x
+        agent_y = self.env.unwrapped.agent.y
 
         if best_action == 0:
             sprite_to_show = self.arrow_image  # No rotation needed
@@ -176,35 +181,36 @@ class QValueRenderWrapper(Wrapper):
         self.window.blit(sprite_to_show, arrow_rect)
 
     def _draw_entities(self, canvas, pix_square_size):
-        # Drawing the avocado
-        pygame.draw.rect(
-            canvas,
-            self.env.AVOCADO_COLOR,
-            pygame.Rect(
-                pix_square_size * self.env.avocado.x,
-                pix_square_size * self.env.avocado.y,
-                pix_square_size,
-                pix_square_size
+        # Drawing the avocados
+        for avocado in self.env.unwrapped.avocados:
+            pygame.draw.rect(
+                canvas,
+                self.env.unwrapped.AVOCADO_COLOR,
+                pygame.Rect(
+                    pix_square_size * avocado.x,
+                    pix_square_size * avocado.y,
+                    pix_square_size,
+                    pix_square_size
+                )
             )
-        )
 
         # Drawing the agent
         pygame.draw.rect(
             canvas,
-            self.env.AGENT_COLOR,
+            self.env.unwrapped.AGENT_COLOR,
             pygame.Rect(
-                pix_square_size * self.env.agent.x,
-                pix_square_size * self.env.agent.y,
+                pix_square_size * self.env.unwrapped.agent.x,
+                pix_square_size * self.env.unwrapped.agent.y,
                 pix_square_size,
                 pix_square_size
             )
         )
 
         # Drawing the enemies
-        for enemy in self.env.enemies:
+        for enemy in self.env.unwrapped.enemies:
             pygame.draw.rect(
                 canvas,
-                self.env.ENEMY_COLOR,
+                self.env.unwrapped.ENEMY_COLOR,
                 pygame.Rect(
                     pix_square_size * enemy.x,
                     pix_square_size * enemy.y,
