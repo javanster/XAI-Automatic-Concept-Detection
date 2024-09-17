@@ -37,8 +37,7 @@ class DoubleDQNAgent:
         model.add(Conv2D(32, kernel_size=3, activation="relu", padding="same"))
         model.add(Conv2D(64, kernel_size=3, activation="relu", padding="same"))
         model.add(Flatten())
-        model.add(Dense(64, activation="relu"))
-        model.add(Dense(64, activation="relu"))
+        model.add(Dense(128, activation="relu"))
         model.add(Dense(self.env.action_space.n, activation="linear"))
         model.compile(
             loss="mse",
@@ -89,7 +88,7 @@ class DoubleDQNAgent:
             np.array(X) / 255, np.array(y),
             batch_size=minibatch_size,
             verbose=0,
-            shuffle=False if terminal_state else None,
+            shuffle=False if terminal_state else None,  # What function does this have?
         )
 
     def train(self, config, track_metrics=False):
