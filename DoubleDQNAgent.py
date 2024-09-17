@@ -16,7 +16,7 @@ import os
 
 class DoubleDQNAgent:
     def __init__(self, env, learning_rate=0.01, model_path=None):
-        self.MODEL_NAME = "64x2"
+        self.MODEL_NAME = "conv2D32_conv2D64_dense64x2"
         self.env = env
 
         if not isinstance(env.action_space, gym.spaces.Discrete):
@@ -29,10 +29,7 @@ class DoubleDQNAgent:
         self.target_model = self._create_model(learning_rate=learning_rate)
         self.target_model.set_weights(self.online_model.get_weights())
 
-        self.training_counter = 0
-        self.target_update_counter = 0
-
-        self.best_static_average = float("-inf")
+        self.best_tumbling_window_average = float("-inf")
 
     def _create_model(self, learning_rate):
         model = Sequential()
@@ -40,7 +37,8 @@ class DoubleDQNAgent:
         model.add(Conv2D(32, kernel_size=3, activation="relu", padding="same"))
         model.add(Conv2D(64, kernel_size=3, activation="relu", padding="same"))
         model.add(Flatten())
-        model.add(Dense(128, activation="relu"))
+        model.add(Dense(64, activation="relu"))
+        model.add(Dense(64, activation="relu"))
         model.add(Dense(self.env.action_space.n, activation="linear"))
         model.compile(
             loss="mse",
@@ -101,19 +99,19 @@ class DoubleDQNAgent:
         discount = config["discount"]
         training_frequency = config["training_frequency"]
         update_target_every = config["update_target_every"]
-        episodes_to_train = config["episodes_to_train"]
+        steps_to_train = config["steps_to_train"]
 
         self.replay_buffer = deque(maxlen=replay_buffer_size)
 
         epsilon = config["starting_epsilon"]
         starting_epsilon = config["starting_epsilon"]
-        prop_episodes_epsilon_decay = config["prop_episodes_epsilon_decay"]
+        prop_steps_epsilon_decay = config["prop_steps_epsilon_decay"]
         min_epsilon = config["min_epsilon"]
 
-        num_decay_episodes = episodes_to_train * prop_episodes_epsilon_decay
+        num_decay_steps = steps_to_train * prop_steps_epsilon_decay
 
         epsilon_decay = (
-            min_epsilon / starting_epsilon) ** (1 / num_decay_episodes)
+            min_epsilon / starting_epsilon) ** (1 / num_decay_steps)
 
         if track_metrics:
             wandb.init(
@@ -129,79 +127,88 @@ class DoubleDQNAgent:
         np.random.seed(28)
         tf.random.set_seed(28)
 
-        rewards_queue = deque(maxlen=config["average_window"])
+        rewards_queue = deque(maxlen=config["episode_metrics_window"])
 
-        for episode in tqdm(range(1, episodes_to_train + 1), unit="episode"):
+        steps_passed = 0
+        episodes_passed = 0
 
-            episode_reward = 0
-            current_state, _ = self.env.reset()
+        with tqdm(total=steps_to_train, unit="step") as pbar:
+            while steps_passed < steps_to_train:
 
-            terminated = False
-            truncated = False
+                current_state, _ = self.env.reset()
+                episode_reward = 0
+                terminated = False
+                truncated = False
 
-            while not terminated and not truncated:
-                if np.random.random() > epsilon:
-                    action = np.argmax(self._get_qs(current_state))
-                else:
-                    action = np.random.randint(0, self.env.action_space.n)
+                while not terminated and not truncated:
+                    if np.random.random() > epsilon:
+                        action = np.argmax(self._get_qs(current_state))
+                    else:
+                        action = np.random.randint(0, self.env.action_space.n)
 
-                new_state, reward, terminated, truncated, _ = self.env.step(
-                    action=action)
+                    new_state, reward, terminated, truncated, _ = self.env.step(
+                        action=action)
 
-                episode_reward += reward
+                    steps_passed += 1
+                    episode_reward += reward
+                    pbar.update(1)
 
-                self._update_replay_buffer(
-                    (current_state, action, reward, new_state, terminated))
+                    self._update_replay_buffer(
+                        (current_state, action, reward, new_state, terminated))
 
-                # Updates every step
-                self.training_counter += 1
-                self.target_update_counter += 1
+                    if steps_passed % training_frequency == 0:
+                        self._train_network(
+                            terminated, min_replay_buffer_size, minibatch_size, discount)
 
-                if (self.training_counter >= training_frequency):
-                    self._train_network(
-                        terminated, min_replay_buffer_size, minibatch_size, discount)
-                    self.training_counter = 0
+                    if steps_passed % update_target_every == 0:
+                        self.target_model.set_weights(
+                            self.online_model.get_weights())
 
-                if self.target_update_counter >= update_target_every:
-                    self.target_model.set_weights(
-                        self.online_model.get_weights())
-                    self.target_update_counter = 0
+                    current_state = new_state
 
-                current_state = new_state
+                    if epsilon > min_epsilon:
+                        epsilon *= epsilon_decay
+                        epsilon = max(min_epsilon, epsilon)
 
-            rewards_queue.append(episode_reward)
+                    if track_metrics:
+                        wandb.log({
+                            "step": steps_passed,
+                            "epsilon": epsilon,
+                        })
 
-            log_data = {
-                "epsilon": epsilon,
-                "episode_reward": episode_reward
-            }
+                    if steps_passed >= steps_to_train:
+                        break
 
-            if len(rewards_queue) >= config["average_window"]:
-                average_reward = sum(rewards_queue) / config["average_window"]
-                min_reward = min(rewards_queue)
-                max_reward = max(rewards_queue)
+                episodes_passed += 1
+                rewards_queue.append(episode_reward)
 
-                log_data["rolling_average_reward"] = average_reward
-                log_data["min_reward_over_rolling_window"] = min_reward
-                log_data["max_reward_over_rolling_window"] = max_reward
+                log_data = {
+                    "episode": episodes_passed,
+                    "episode_reward": episode_reward
+                }
 
-                if episode % config["average_window"] == 0:
-                    log_data["static_average_reward"] = average_reward
+                if len(rewards_queue) >= config["episode_metrics_window"]:
+                    average_reward = sum(rewards_queue) / \
+                        config["episode_metrics_window"]
+                    log_data["rolling_window_average_reward"] = average_reward
 
-                    # Checks every average window episode whether a new best static average is reached
-                    if average_reward > self.best_static_average:
-                        self.best_static_average = average_reward
-                        self.online_model.save(
-                            f"models/{self.MODEL_NAME}_{max_reward:_>7.2f}max_{average_reward:_>7.2f}avg_{min_reward:_>7.2f}min__{int(time.time())}.keras")
+                    if episodes_passed % config["episode_metrics_window"] == 0:
+                        min_reward = min(rewards_queue)
+                        max_reward = max(rewards_queue)
+                        log_data["tumbling_window_average_reward"] = average_reward
+                        log_data["min_reward_in_tumbling_window"] = min_reward
+                        log_data["max_reward_in_tumbling_window"] = max_reward
 
-            if track_metrics:
-                wandb.log(log_data)
+                        # Checks every average window episode whether a new best static average is reached
+                        if average_reward > self.best_tumbling_window_average:
+                            self.best_tumbling_window_average = average_reward
+                            self.online_model.save(
+                                f"models/{self.MODEL_NAME}_{average_reward:_>7.2f}avg_{max_reward:_>7.2f}max_{min_reward:_>7.2f}min__{int(time.time())}.keras")
 
-            if epsilon > min_epsilon:
-                epsilon *= epsilon_decay
-                epsilon = max(min_epsilon, epsilon)
+                if track_metrics:
+                    wandb.log(log_data)
 
-        self.env.close()
+            self.env.close()
 
     def test(self, episodes=10, env=None):
         if env:
