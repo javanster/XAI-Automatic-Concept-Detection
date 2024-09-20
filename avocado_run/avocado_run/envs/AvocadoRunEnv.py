@@ -68,14 +68,14 @@ class AvocadoRunEnv(Env):
             )
 
         self.agent = Entity(
-            env_size=self.grid_side_length,
+            grid_side_length=self.grid_side_length,
             starting_position=agent_starting_position
         )
 
         self.avocados = []
         for i in range(self.num_avocados):
             avocado = Entity(
-                env_size=self.grid_side_length,
+                grid_side_length=self.grid_side_length,
                 starting_position=avocado_starting_positions[i] if avocado_starting_positions else None
             )
             while avocado == self.agent or any(existing_avocado == avocado for existing_avocado in self.avocados):
@@ -85,7 +85,7 @@ class AvocadoRunEnv(Env):
                         - two or more avocados were positioned in the same cell \n
                         - at least one avocado was positioned in the same cell as the agent"""
                     )
-                avocado = Entity(env_size=self.grid_side_length)
+                avocado = Entity(grid_side_length=self.grid_side_length)
             self.avocados.append(avocado)
 
         self.enemies = []
