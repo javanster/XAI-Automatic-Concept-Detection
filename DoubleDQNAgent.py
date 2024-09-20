@@ -1,5 +1,5 @@
 from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, Input
+from keras.layers import Dense, Flatten, Conv2D, Input, Dropout
 from keras.optimizers import Adam
 from collections import deque
 import time
@@ -16,7 +16,6 @@ import os
 
 class DoubleDQNAgent:
     def __init__(self, env, learning_rate=0.01, model_path=None):
-        self.MODEL_NAME = "conv2D32_conv2D64_dense64x2"
         self.env = env
 
         if not isinstance(env.action_space, gym.spaces.Discrete):
@@ -42,7 +41,6 @@ class DoubleDQNAgent:
         model.compile(
             loss="mse",
             optimizer=Adam(learning_rate=learning_rate),
-            metrics=["accuracy"]
         )
         return model
 
@@ -202,7 +200,7 @@ class DoubleDQNAgent:
                         if average_reward > self.best_tumbling_window_average:
                             self.best_tumbling_window_average = average_reward
                             self.online_model.save(
-                                f"models/{self.MODEL_NAME}_{average_reward:_>7.2f}avg_{max_reward:_>7.2f}max_{min_reward:_>7.2f}min__{int(time.time())}.keras")
+                                f"models/model_{average_reward:_>7.2f}avg_{max_reward:_>7.2f}max_{min_reward:_>7.2f}min__{int(time.time())}.keras")
 
                 if track_metrics:
                     wandb.log(log_data)
