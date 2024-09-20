@@ -46,22 +46,59 @@ class AvocadoRunEnv(Env):
         self.window = None
         self.clock = None
 
-    def reset(self, seed=None, options=None):
+    def reset(
+            self,
+            seed=None,
+            options=None,
+            agent_starting_position=None,
+            avocado_starting_positions=None,
+            enemy_starting_positions=None
+    ):
         super().reset(seed=seed)
 
-        self.agent = Entity(env_size=self.grid_side_length)
+        if avocado_starting_positions and len(avocado_starting_positions) != self.num_avocados:
+            raise ValueError(
+                """Number of elements in avocado_starting_positions must be equal to num_avocados
+                provided upon class initilaization."""
+            )
+
+        if enemy_starting_positions and len(enemy_starting_positions) != self.num_enemies:
+            raise ValueError(
+                """Number of elements in enemy_starting_positions must be equal to num_enemies."""
+            )
+
+        self.agent = Entity(
+            env_size=self.grid_side_length,
+            starting_position=agent_starting_position
+        )
 
         self.avocados = []
-        for _ in range(self.num_avocados):
-            avocado = Entity(env_size=self.grid_side_length)
+        for i in range(self.num_avocados):
+            avocado = Entity(
+                env_size=self.grid_side_length,
+                starting_position=avocado_starting_positions[i] if avocado_starting_positions else None
+            )
             while avocado == self.agent or any(existing_avocado == avocado for existing_avocado in self.avocados):
+                if avocado_starting_positions:
+                    raise ValueError(
+                        """A list of avocado starting positions was given where either: \n
+                        - two or more avocados were positioned in the same cell \n
+                        - at least one avocado was positioned in the same cell as the agent"""
+                    )
                 avocado = Entity(env_size=self.grid_side_length)
             self.avocados.append(avocado)
 
         self.enemies = []
-        for _ in range(self.num_enemies):
-            enemy = Entity(self.grid_side_length)
+        for i in range(self.num_enemies):
+            enemy = Entity(self.grid_side_length,
+                           starting_position=enemy_starting_positions[i] if enemy_starting_positions else None)
             while enemy == self.agent or any(avocado == enemy for avocado in self.avocados):
+                if enemy_starting_positions:
+                    raise ValueError(
+                        """A list of enemy starting positions was given where either: \n
+                        - at least one enemy was positioned in the same cell as an avocado \n
+                        - at least one enemy was positioned in the same cell as the agent"""
+                    )
                 enemy = Entity(self.grid_side_length)
             self.enemies.append(enemy)
 
@@ -77,10 +114,10 @@ class AvocadoRunEnv(Env):
             (self.grid_side_length, self.grid_side_length, 3),
             dtype=np.uint8)
         for avocado in self.avocados:
-            obs[avocado.x, avocado.y] = self.AVOCADO_COLOR
-        obs[self.agent.x, self.agent.y] = self.AGENT_COLOR
+            obs[avocado.y, avocado.x] = self.AVOCADO_COLOR
+        obs[self.agent.y, self.agent.x] = self.AGENT_COLOR
         for enemy in self.enemies:
-            obs[enemy.x, enemy.y] = self.ENEMY_COLOR
+            obs[enemy.y, enemy.x] = self.ENEMY_COLOR
 
         return obs
 
