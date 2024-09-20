@@ -7,18 +7,18 @@ class Entity:
     A class for an entity used in the AvocadoRun environment
     """
 
-    def __init__(self, env_size, starting_position=None) -> None:
-        if starting_position and any(starting_coord >= env_size
+    def __init__(self, grid_side_length, starting_position=None) -> None:
+        if starting_position and any(starting_coord >= grid_side_length or starting_coord < 0
                                      for starting_coord in starting_position):
             raise ValueError(
-                "A starting coordinate may not be equal to or exceed env_size")
+                "A starting coordinate may not be equal to or exceed grid_side_length, or be below 0")
         if starting_position:
             self.x = starting_position[0]
             self.y = starting_position[1]
         else:
-            self.x = np.random.randint(0, env_size)
-            self.y = np.random.randint(0, env_size)
-        self.env_size = env_size
+            self.x = np.random.randint(0, grid_side_length)
+            self.y = np.random.randint(0, grid_side_length)
+        self.grid_side_length = grid_side_length
 
     def __sub__(self, other):
         return (self.x - other.x, self.y - other.y)
@@ -39,8 +39,8 @@ class Entity:
             self.move()  # Do nothing
 
     def move(self, x=0, y=0):
-        self.x = max(0, min(self.x + x, self.env_size - 1))
-        self.y = max(0, min(self.y + y, self.env_size - 1))
+        self.x = max(0, min(self.x + x, self.grid_side_length - 1))
+        self.y = max(0, min(self.y + y, self.grid_side_length - 1))
 
     def move_towards_target(self, other):
         potential_directions = []
