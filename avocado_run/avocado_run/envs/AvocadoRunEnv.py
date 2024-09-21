@@ -92,12 +92,11 @@ class AvocadoRunEnv(Env):
         for i in range(self.num_enemies):
             enemy = Entity(self.grid_side_length,
                            starting_position=enemy_starting_positions[i] if enemy_starting_positions else None)
-            while enemy == self.agent or any(avocado == enemy for avocado in self.avocados):
+            while enemy == self.agent:
                 if enemy_starting_positions:
                     raise ValueError(
-                        """A list of enemy starting positions was given where either: \n
-                        - at least one enemy was positioned in the same cell as an avocado \n
-                        - at least one enemy was positioned in the same cell as the agent"""
+                        """A list of enemy starting positions was given where at least one enemy
+                        was positioned in the same cell as the agent"""
                     )
                 enemy = Entity(self.grid_side_length)
             self.enemies.append(enemy)
