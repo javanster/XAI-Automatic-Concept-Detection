@@ -90,5 +90,8 @@ class ObservationHandler:
         np.save(file_path, observation_array)
 
     def load_observations(self, file_path, normalize=False):
-        observations = np.load(file_path)
-        return observations / 255 if normalize else observations
+        try:
+            observations = np.load(file_path)
+            return observations / 255 if normalize else observations
+        except:
+            return []
