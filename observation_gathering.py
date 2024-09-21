@@ -2,6 +2,7 @@ import gymnasium as gym
 import avocado_run
 from ObservationHandler import ObservationHandler
 from data.observations.custom_entity_positions import custom_positions
+import time
 
 env = gym.make(id="AvocadoRun-v0", num_avocados=1)
 
@@ -9,7 +10,7 @@ observation_handler = ObservationHandler(env=env)
 
 observation_handler.save_random_observations(
     num_observations=300,
-    file_path="data/observations/random_observations.npy"
+    file_path=f"data/observations/random_observations_{int(time.time())}.npy"
 )
 
 for key in custom_positions.keys():
@@ -23,6 +24,6 @@ for key in custom_positions.keys():
 
 for i in range(3):
     observation_handler.show_observation(
-        file_path="data/observations/do_nothing_good_move_enemy_focused_observations.npy",
+        file_path="data/observations/do_nothing_good_action_enemy_focused_observations.npy",
         observation_index=i
     )
