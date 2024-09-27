@@ -1,4 +1,5 @@
-from shap import image_plot, GradientExplainer
+from shap import GradientExplainer
+from shap_image_plot import shap_image_plot
 import gymnasium as gym
 import avocado_run
 from DoubleDQNAgent import DoubleDQNAgent
@@ -45,17 +46,31 @@ for good_action_for_obs in actions:
             )
 
             shap_values = explainer.shap_values(observations_to_explain)
+            q_values = agent.online_model.predict(observations_to_explain)
 
-            for action in range(env.action_space.n):
+            num_actions = env.action_space.n
+            shap_values_list = []
+
+            for action in range(num_actions):
                 shap_values_action = shap_values[..., action]
+                shap_values_list.append(shap_values_action)
 
-                image_plot(shap_values_action,
-                           observations_to_explain, show=False)
-                plt.suptitle(
-                    f"SHAP for action \"{action_dict[action]}\"", fontsize=16)
+            labels = [
+                f"Action \"{action_dict[action]}\"" for action in range(num_actions)]
 
-                filename = f"{action_dict[action]}_action_{observation_focus}_focused_obs.png"
-                filepath = os.path.join(
-                    f"shap_explanations/{train_run_name}/{model_name}/{good_action_for_obs}_good_action/", filename)
-                plt.savefig(filepath, dpi=300, bbox_inches='tight')
-                plt.close()
+            shap_image_plot(
+                shap_values_list=shap_values_list,
+                pixel_values=observations_to_explain,
+                q_values=q_values,
+                labels=labels,
+                show=False
+            )
+
+            plt.suptitle(
+                f"\"{good_action_for_obs}\" good action, {observation_focus} focused", fontsize=16)
+
+            filename = f"{good_action_for_obs}_good_action_{observation_focus}_focused_obs.png"
+            filepath = os.path.join(
+                f"shap_explanations/{train_run_name}/{model_name}/", filename)
+            plt.savefig(filepath, dpi=300, bbox_inches='tight')
+            plt.close()
