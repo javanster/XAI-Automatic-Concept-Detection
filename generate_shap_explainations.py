@@ -39,8 +39,10 @@ for good_action_for_obs in actions:
             file_path=f"data/observations/{good_action_for_obs}_good_action_{observation_focus}_focused_observations.npy",  normalize=True)
 
         if len(observations_to_explain) > 0:
-            explainer = GradientExplainer(data=background_observations,
-                                          model=agent.online_model)
+            explainer = GradientExplainer(
+                data=background_observations,
+                model=agent.online_model
+            )
 
             shap_values = explainer.shap_values(observations_to_explain)
 
