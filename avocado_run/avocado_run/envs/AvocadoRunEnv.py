@@ -19,6 +19,8 @@ class AvocadoRunEnv(Env):
             render_mode=None,
             render_fps=4,
             num_avocados=1,
+            num_enemies=2,
+            aggressive_enemies=False,
     ):
         super().__init__()
         self.STEP_PENALTY = -0.1
@@ -32,7 +34,8 @@ class AvocadoRunEnv(Env):
 
         self.render_fps = render_fps
         self.num_avocados = num_avocados
-        self.num_enemies = 2
+        self.num_enemies = num_enemies
+        self.aggressive_enemies = aggressive_enemies
         self.grid_side_length = 10
         self.action_space = Discrete(5)
         self.observation_space = Box(
@@ -125,7 +128,7 @@ class AvocadoRunEnv(Env):
         self.agent.action(action)
 
         for enemy in self.enemies:
-            if self.episode_step % 3 == 0:
+            if self.aggressive_enemies or self.episode_step % 3 == 0:
                 enemy.move_towards_target(self.agent)
             else:
                 enemy.random_action()
