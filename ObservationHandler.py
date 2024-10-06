@@ -1,6 +1,7 @@
 from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 
 
 class ObservationHandler:
@@ -9,23 +10,25 @@ class ObservationHandler:
     them.
     """
 
-    def __init__(self, env):
-        self.env = env
-
-    def save_random_observations(self, num_observations, file_path):
+    def save_random_observations(self, envs, num_total_observations, file_path):
         """
         Parameters:
+        - envs ([Env]): A list of AvocadoRun environment instances to gather observations from.
         - num_observations (int): Number of random observations to save.
-        - env (Env): The Gymnasium environment instance.
         - file_path (str): Path to save the NumPy array file.
         """
         observations = []
 
-        with tqdm(total=num_observations, unit="observation") as pbar:
-            while len(observations) < num_observations:
-                observation, _ = self.env.reset()
-                observations.append(observation)
-                pbar.update(1)
+        num_observations_from_each_env = num_total_observations // len(envs)
+
+        with tqdm(total=num_total_observations, unit="observation") as pbar:
+            for env in envs:
+                for _ in range(num_observations_from_each_env):
+                    observation, _ = env.reset()
+                    observations.append(observation)
+                    pbar.update(1)
+
+        random.shuffle(observations)
 
         observations_array = np.array(observations, dtype=np.uint8)
         np.save(file_path, observations_array)
@@ -46,6 +49,7 @@ class ObservationHandler:
 
     def save_custom_observations(
         self,
+        envs,
         file_path,
         agent_position_list,
         avocado_positions_list,
@@ -55,6 +59,7 @@ class ObservationHandler:
         Saves multiple custom observations with specified positions for the agent, avocados, and enemies.
 
         Parameters:
+        - envs ([Env]): A list of AvocadoRun environment instances to gather observations from. The length of the list must equal the lenght of the lists of entity positions. Each index in the positions lists will use the env at the corresponding index in the env list. 
         - file_path (str): Path to save the NumPy array file.
         - agent_position_list (list of tuples): A list where each tuple (x, y) denotes the cell position of the agent for each observation.
         - avocado_positions_list (list of lists of tuples): A list of lists where each inner list contains tuples (x, y) representing the positions of avocados for each observation.
@@ -77,7 +82,9 @@ class ObservationHandler:
             avocado_positions = avocado_positions_list[i]
             enemy_positions = enemy_positions_list[i]
 
-            observation, _ = self.env.reset(
+            env = envs[i]
+
+            observation, _ = env.reset(
                 agent_starting_position=agent_position,
                 avocado_starting_positions=avocado_positions,
                 enemy_starting_positions=enemy_positions,
