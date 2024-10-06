@@ -71,6 +71,6 @@ for good_action_for_obs in actions:
 
             filename = f"{good_action_for_obs}_good_action_{observation_focus}_focused_obs.png"
             filepath = os.path.join(
-                f"shap_explanations/{train_run_name}/{model_name}/", filename)
+                f"shap_explanations/{train_run_name}/{model_name}/normal_environment/", filename)
             plt.savefig(filepath, dpi=300, bbox_inches='tight')
             plt.close()
