@@ -56,7 +56,7 @@ do_nothing_good_action_enemy_focused = {
     "enemy_positions_list": [[(1, 1), (8, 8)], [(7, 0), (9, 2)], [(0, 7), (2, 9)],]
 }
 
-custom_positions = {
+normal_env_entity_positions = {
     "up_good_action_avocado_focused": up_good_action_avocado_focused,
     "up_good_action_enemy_focused": up_good_action_enemy_focused,
     "right_good_action_avocado_focused": right_good_action_avocado_focused,
