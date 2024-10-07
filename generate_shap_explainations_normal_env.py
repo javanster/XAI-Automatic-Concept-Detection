@@ -25,9 +25,7 @@ agent = DoubleDQNAgent(
     model_path=f"models/{train_run_name}/{model_name}.keras"
 )
 
-observation_handler = ObservationHandler()
-
-background_observations = observation_handler.load_observations(
+background_observations = ObservationHandler.load_observations(
     file_path="data/observations/normal_environment/random_observations_normal_env_1728221019.npy", normalize=True)
 
 actions = ["up", "right", "down", "left", "do_nothing"]
@@ -36,7 +34,7 @@ observation_focuses = ["avocado", "enemy"]
 for good_action_for_obs in actions:
     for observation_focus in observation_focuses:
 
-        observations_to_explain = observation_handler.load_observations(
+        observations_to_explain = ObservationHandler.load_observations(
             file_path=f"data/observations/normal_environment/{good_action_for_obs}_good_action_{observation_focus}_focused_observations.npy",  normalize=True)
 
         if len(observations_to_explain) > 0:

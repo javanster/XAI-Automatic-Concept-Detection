@@ -25,14 +25,12 @@ agent = DoubleDQNAgent(
     model_path=f"models/{train_run_name}/{model_name}.keras"
 )
 
-observation_handler = ObservationHandler()
-
-background_observations = observation_handler.load_observations(
+background_observations = ObservationHandler.load_observations(
     file_path="data/observations/ood/no_enemies/random_observations_1728226030.npy", normalize=True)
 
 for i in range(0, 3):
 
-    observations_to_explain = observation_handler.load_observations(
+    observations_to_explain = ObservationHandler.load_observations(
         file_path=f"data/observations/ood/no_enemies/ood_1_avo_stuck_{i}_observations.npy",  normalize=True)
 
     if len(observations_to_explain) > 0:

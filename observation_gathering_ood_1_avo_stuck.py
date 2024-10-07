@@ -11,11 +11,9 @@ env_1_enemy_1_avocado = gym.make(
 env_0_enemies_2_avocados = gym.make(
     id="AvocadoRun-v0", num_avocados=2, num_enemies=0)
 
-observation_handler = ObservationHandler()
-
 time_stamp = int(time.time())
 
-observation_handler.save_random_observations(
+ObservationHandler.save_random_observations(
     envs=[env_0_enemies_1_avocado, env_1_enemy_1_avocado,
           env_0_enemies_2_avocados],
     num_total_observations=1000,
@@ -24,7 +22,7 @@ observation_handler.save_random_observations(
 
 for key in ood_1_avo_stuck_positions.keys():
     observation_dict = ood_1_avo_stuck_positions[key]
-    observation_handler.save_custom_observations(
+    ObservationHandler.save_custom_observations(
         envs=[env_0_enemies_1_avocado, env_1_enemy_1_avocado,
               env_0_enemies_2_avocados],
         file_path=f"data/observations/ood/no_enemies/{key}_observations.npy",
@@ -36,7 +34,7 @@ for key in ood_1_avo_stuck_positions.keys():
 for key in ood_1_avo_stuck_positions.keys():
     observation_dict = ood_1_avo_stuck_positions[key]
     for i in range(len(observation_dict["agent_position_list"])):
-        observation_handler.show_observation(
+        ObservationHandler.show_observation(
             file_path=f"data/observations/ood/no_enemies/{key}_observations.npy",
             observation_index=i
         )

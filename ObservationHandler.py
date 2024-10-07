@@ -9,8 +9,13 @@ class ObservationHandler:
     A class for saving random and custom observations from the AvocadoRun environment, and showing
     them.
     """
+    @staticmethod
+    def _save_observations(observations, file_path):
+        observations_array = np.array(observations, dtype=np.uint8)
+        np.save(file_path, observations_array)
 
-    def save_random_observations(self, envs, num_total_observations, file_path):
+    @staticmethod
+    def save_random_observations(envs, num_total_observations, file_path):
         """
         Parameters:
         - envs ([Env]): A list of AvocadoRun environment instances to gather observations from.
@@ -30,10 +35,11 @@ class ObservationHandler:
 
         random.shuffle(observations)
 
-        observations_array = np.array(observations, dtype=np.uint8)
-        np.save(file_path, observations_array)
+        ObservationHandler._save_observations(
+            observations=observations, file_path=file_path)
 
-    def show_observation(self, file_path, observation_index):
+    @staticmethod
+    def show_observation(file_path, observation_index):
         """
         Parameters:
         - file_path (str): Path to save the NumPy array file.
@@ -47,8 +53,8 @@ class ObservationHandler:
         ax.axis('off')
         plt.show()
 
+    @staticmethod
     def save_custom_observations(
-        self,
         envs,
         file_path,
         agent_position_list,
@@ -92,12 +98,38 @@ class ObservationHandler:
 
             observations.append(observation)
 
-        observation_array = np.array(observations, dtype=np.uint8)
-        np.save(file_path, observation_array)
+        ObservationHandler._save_observations(
+            observations=observations, file_path=file_path)
 
-    def load_observations(self, file_path, normalize=False):
+    @staticmethod
+    def load_observations(file_path, normalize=False):
         try:
             observations = np.load(file_path)
             return observations / 255 if normalize else observations
         except:
             return []
+
+    @staticmethod
+    def save_observations_for_tcav(env, num_observations_for_each, file_path_concept, file_path_other, is_concept_in_observation):
+        observations_with_concept = []
+        observations_without_concept = []
+
+        while len(observations_with_concept) < num_observations_for_each or len(observations_without_concept) < num_observations_for_each:
+            observation, _ = env.reset()
+            if is_concept_in_observation(env) and len(observations_with_concept) < num_observations_for_each:
+                observations_with_concept.append(observation)
+            elif len(observations_without_concept) < num_observations_for_each:
+                observations_without_concept.append(observation)
+
+        print(
+            f"Observations with concept gathered: {len(observations_with_concept)}")
+        print(
+            f"Observations without concept gathered: {len(observations_without_concept)}")
+
+        random.shuffle(observations_with_concept)
+        random.shuffle(observations_without_concept)
+
+        ObservationHandler._save_observations(
+            observations=observations_with_concept, file_path=file_path_concept)
+        ObservationHandler._save_observations(
+            observations=observations_without_concept, file_path=file_path_other)
