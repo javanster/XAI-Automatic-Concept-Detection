@@ -60,6 +60,7 @@ for layer_index in LAYER_INDEXES:
             layer_index=layer_index,
             observations=observations_with_concept
         )
+
         non_concept_activations_for_layer = get_activations_of_layer(
             model=agent.online_model,
             layer_index=layer_index,
