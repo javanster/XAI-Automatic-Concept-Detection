@@ -38,9 +38,9 @@ wild_glitter_14_best_model_ood_1_avo_stuck_positions = {
 }
 
 eager_disco_16_best_model_ood_1_avo_stuck_0 = {
-    "agent_position_list": [(5, 9), (5, 9), (5, 9)],
-    "avocado_positions_list": [[(6, 9)], [(6, 9)], [(6, 9), (3, 9)]],
-    "enemy_positions_list": [[], [(3, 9)], []]
+    "agent_position_list": [(6, 9), (6, 9), (6, 9)],
+    "avocado_positions_list": [[(5, 9)], [(5, 9)], [(5, 9), (9, 9)]],
+    "enemy_positions_list": [[], [(9, 9)], []]
 }
 
 eager_disco_16_best_model_ood_1_avo_stuck_1 = {
