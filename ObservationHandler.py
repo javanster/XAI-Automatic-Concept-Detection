@@ -110,15 +110,17 @@ class ObservationHandler:
             return []
 
     @staticmethod
-    def save_observations_for_tcav(env, num_observations_for_each, file_path_concept, file_path_other, is_concept_in_observation):
+    def save_observations_for_tcav(env, num_observations_for_each, file_path_concept, file_path_other, is_concept_in_observation, agent_starting_position=None, avocado_starting_positions=None, enemy_starting_positions=None):
         observations_with_concept = []
         observations_without_concept = []
 
         while len(observations_with_concept) < num_observations_for_each or len(observations_without_concept) < num_observations_for_each:
-            observation, _ = env.reset()
+            observation, _ = env.reset(agent_starting_position=agent_starting_position,
+                                       avocado_starting_positions=avocado_starting_positions,
+                                       enemy_starting_positions=enemy_starting_positions)
             if is_concept_in_observation(env) and len(observations_with_concept) < num_observations_for_each:
                 observations_with_concept.append(observation)
-            elif len(observations_without_concept) < num_observations_for_each:
+            elif not is_concept_in_observation(env) and len(observations_without_concept) < num_observations_for_each:
                 observations_without_concept.append(observation)
 
         print(
