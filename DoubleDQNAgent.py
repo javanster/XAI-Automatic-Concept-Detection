@@ -1,14 +1,14 @@
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, Input, Dropout
-from keras.optimizers import Adam
+from keras.api.models import Sequential
+from keras.api.layers import Dense, Flatten, Conv2D, Input
+from keras.api.optimizers import Adam
 from collections import deque
 import time
 import numpy as np
 import random
 import tensorflow as tf
 from tqdm import tqdm
-from keras.layers import Input
-from keras.saving import load_model
+from keras.api.layers import Input
+from keras.api.saving import load_model
 import wandb
 import gymnasium as gym
 import os
@@ -46,9 +46,6 @@ class DoubleDQNAgent:
 
     def _update_replay_buffer(self, transition):
         self.replay_buffer.append(transition)
-
-    def _get_qs(self, state):
-        return self.online_model.predict(np.array(state).reshape(-1, *state.shape)/255)[0]
 
     def _train_network(self, terminal_state, min_replay_buffer_size, minibatch_size, discount):
         if len(self.replay_buffer) < min_replay_buffer_size:
@@ -139,7 +136,10 @@ class DoubleDQNAgent:
 
                 while not terminated and not truncated:
                     if np.random.random() > epsilon:
-                        action = np.argmax(self._get_qs(current_state))
+                        state_reshaped = np.array(
+                            current_state).reshape(-1, *current_state.shape)/255
+                        q_values = self.online_model.predict(state_reshaped)[0]
+                        action = np.argmax(q_values)
                     else:
                         action = np.random.randint(0, self.env.action_space.n)
 
@@ -200,7 +200,7 @@ class DoubleDQNAgent:
                         if average_reward > self.best_tumbling_window_average:
                             self.best_tumbling_window_average = average_reward
                             self.online_model.save(
-                                f"models/model_{average_reward:_>7.2f}avg_{max_reward:_>7.2f}max_{min_reward:_>7.2f}min__{int(time.time())}.keras")
+                                f"models/model_{average_reward:_>9.4f}avg_{max_reward:_>9.4f}max_{min_reward:_>9.4f}min__{int(time.time())}.keras")
 
                 if track_metrics:
                     wandb.log(log_data)
@@ -221,8 +221,8 @@ class DoubleDQNAgent:
             while not terminated:
                 observation_reshaped = np.array(
                     observation).reshape(-1, *self.env.observation_space.shape) / 255.0
-                action = np.argmax(
-                    self.online_model.predict(observation_reshaped))
+                q_values = self.online_model.predict(observation_reshaped)[0]
+                action = np.argmax(q_values)
 
                 observation, _, terminated, _, _ = self.env.step(
                     action=action)
