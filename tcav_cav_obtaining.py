@@ -1,6 +1,6 @@
 import gymnasium as gym
 import avocado_run
-from DoubleDQNAgent import DoubleDQNAgent
+from keras.api.saving import load_model
 from ObservationHandler import ObservationHandler
 from keras import Model
 import numpy as np
@@ -15,14 +15,7 @@ CONCEPTS = [c for c in range(1, 7)]
 TRAIN_RUN_NAME = "eager_disco_16"
 MODEL_NAME = "best_model"
 
-
-env = gym.make(id="AvocadoRun-v0", render_mode="human",
-               num_avocados=1, num_enemies=2, aggressive_enemies=False)
-
-agent = DoubleDQNAgent(
-    env=env,
-    model_path=f"models/{TRAIN_RUN_NAME}/{MODEL_NAME}.keras"
-)
+model = load_model(f"models/{TRAIN_RUN_NAME}/{MODEL_NAME}.keras")
 
 
 def get_activations_of_layer(model, layer_index, observations):
@@ -56,13 +49,13 @@ for layer_index in LAYER_INDEXES:
         )
 
         concept_activations_for_layer = get_activations_of_layer(
-            model=agent.online_model,
+            model=model,
             layer_index=layer_index,
             observations=observations_with_concept
         )
 
         non_concept_activations_for_layer = get_activations_of_layer(
-            model=agent.online_model,
+            model=model,
             layer_index=layer_index,
             observations=random_observations_without_concept
         )
@@ -92,7 +85,7 @@ for layer_index in LAYER_INDEXES:
             f"tcav_data/cavs/{TRAIN_RUN_NAME}/{MODEL_NAME}/concept_{concept}_layer_{layer_index}_cav.npy", cav)
 
 print(f"{'Concept':<20} | {'Classifier Accuracy':>18}")
-print('-' * 32)
+print('-' * 42)
 for concept in accuracy_dict.keys():
     print(f"{concept:<20} | {accuracy_dict[concept]}")
 
