@@ -110,7 +110,36 @@ class ObservationHandler:
             return []
 
     @staticmethod
-    def save_observations_for_tcav(env, num_observations_for_each, file_path_concept, file_path_other, is_concept_in_observation, agent_starting_position=None, avocado_starting_positions=None, enemy_starting_positions=None):
+    def save_observations_given_concept(
+        env,
+        num_observations_for_each,
+        file_path_concept,
+        file_path_other,
+        is_concept_in_observation,
+        agent_starting_position=None,
+        avocado_starting_positions=None,
+        enemy_starting_positions=None
+    ):
+        """
+        Saves observations categorized based on the presence or absence of a specific concept.
+
+        Parameters:
+        - env (Env): The AvocadoRun environment instance to gather observations from.
+        - num_observations_for_each (int): Number of observations to save for each category
+            (with and without the concept).
+        - file_path_concept (str): Path to save the NumPy array file containing random observations
+            where the concept is present.
+        - file_path_other (str): Path to save the NumPy array file containing random observations
+            where the concept is absent.
+        - is_concept_in_observation (callable): A function that takes the environment as input and
+            returns True if the concept is present in the current observation, otherwise False.
+        - agent_starting_position (tuple, optional): Starting position (x, y) of the agent.
+            Defaults to None.
+        - avocado_starting_positions (list of tuple, optional): Starting positions of avocados.
+            Defaults to None.
+        - enemy_starting_positions (list of tuple, optional): Starting positions of enemies.
+            Defaults to None.
+        """
         observations_with_concept = []
         observations_without_concept = []
 
@@ -135,3 +164,56 @@ class ObservationHandler:
             observations=observations_with_concept, file_path=file_path_concept)
         ObservationHandler._save_observations(
             observations=observations_without_concept, file_path=file_path_other)
+
+    @staticmethod
+    def save_observations_specific_output_classes(
+        env,
+        model,
+        output_classes,
+        num_observations,
+        file_path_base
+
+    ):
+        """
+        Saves observations corresponding to specific output classes predicted by a model.
+
+        Parameters:
+        - env (Env): The AvocadoRun environment instance to gather observations from.
+        - model: The trained Keras model used to predict output classes.
+        - output_classes (list of int): A list of target output class indices for which observations
+            should be collected.
+        - num_observations (int): Number of observations to save for each specified output class.
+        - file_path_base (str): Base file path to save the NumPy array files. The output class index
+            will be appended to this base to form the complete file path for each class
+        """
+        observation_dict = {ocls: []
+                            for ocls in output_classes}
+
+        with tqdm(total=num_observations * len(output_classes), desc="Collecting Observations") as pbar:
+            while any(len(observation_dict[ocls]) < num_observations for ocls in observation_dict.keys()):
+                batch_size = 256
+                observation_batch = np.array([env.reset()[0]
+                                              for _ in range(batch_size)])
+                model_output_batch = model.predict(
+                    observation_batch, batch_size=batch_size)
+
+                for i, model_output in enumerate(model_output_batch):
+                    predicted_class = np.argmax(model_output)
+                    class_observations = observation_dict[predicted_class]
+
+                    if len(class_observations) < num_observations:
+                        class_observations.append(observation_batch[i])
+
+                        pbar.update(1)
+                        if all(len(observation_dict[ocls]) >= num_observations for ocls in observation_dict.keys()):
+                            break
+
+        for ocls in output_classes:
+            observations = observation_dict[ocls]
+            file_path = f"{file_path_base}{ocls}.npy"
+
+            ObservationHandler._save_observations(
+                observations=observations, file_path=file_path)
+
+            print(
+                f"Collected {len(observations)} observations for output class {ocls}")
