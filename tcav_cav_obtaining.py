@@ -1,5 +1,3 @@
-import gymnasium as gym
-import avocado_run
 from keras.api.saving import load_model
 from ObservationHandler import ObservationHandler
 from keras import Model
