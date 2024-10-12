@@ -8,24 +8,13 @@ import avocado_run
 import pandas as pd
 from tqdm import tqdm
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-sns.set_theme(style="whitegrid")
-
-action_dict = {
-    0: "up",
-    1: "right",
-    2: "down",
-    3: "left",
-    4: "do_nothing",
-}
 
 TRAIN_RUN_NAME = "eager_disco_16"
 MODEL_NAME = "best_model"
 
 model = load_model(f"models/{TRAIN_RUN_NAME}/{MODEL_NAME}.keras")
 env = gym.make(id="AvocadoRun-v0", num_avocados=1, num_enemies=2)
+action_dict = env.unwrapped.action_dict
 
 LAYER_INDEXES = [l for l in range(len(model.layers))]
 CONCEPTS = [concept for concept in ConceptDetector.concept_name_dict.keys()]
@@ -64,7 +53,7 @@ with tqdm(total=total_iterations, desc="Calculating TCAV scores", unit="score") 
 
                 target_layer = model.layers[layer_index]
 
-                activation_model = Model(
+                activation_model_for_layer = Model(
                     inputs=model.layers[0].input,
                     outputs=model.layers[layer_index].output
                 )
@@ -72,23 +61,25 @@ with tqdm(total=total_iterations, desc="Calculating TCAV scores", unit="score") 
                 # CALCULATING TCAV SCORE
 
                 activations = get_activations(
-                    activation_model, observations_classified_as_target_class)
+                    activation_model_for_layer, observations_classified_as_target_class)
                 directional_derivatives = np.dot(activations, cav)
                 tcav_score = np.mean(directional_derivatives > 0)
 
                 tcav_results.append({
-                    'Target_Class': target_class,
-                    'Action': action_dict[target_class],
-                    'Concept_ID': concept,
-                    'Concept_Name': ConceptDetector.concept_name_dict[concept],
-                    'Layer_Index': layer_index,
-                    'TCAV_Score': tcav_score
+                    'target_class': target_class,
+                    'action': action_dict[target_class],
+                    'concept_id': concept,
+                    'concept_name': ConceptDetector.concept_name_dict[concept],
+                    'layer_index': layer_index,
+                    'layer_name': model.layers[layer_index].name,
+                    'tcav_score': tcav_score
                 })
 
                 pbar.update(1)
 
 tcav_df = pd.DataFrame(tcav_results)
 
-print(tcav_df.head())
+print(tcav_df)
 
-tcav_df.to_csv('tcav_data/tcav_scores/tcav_scores.csv', index=False)
+tcav_df.to_csv(
+    f'tcav_data/tcav_scores/{TRAIN_RUN_NAME}/{MODEL_NAME}/tcav_scores.csv', index=False)
