@@ -23,10 +23,10 @@ class AvocadoRunEnv(Env):
             aggressive_enemies=False,
     ):
         super().__init__()
-        self.STEP_PENALTY = -0.1
-        self.ENEMY_HIT_PENALTY = -20
-        self.AVOCADO_REWARD = 100
-        self.reward_range = (-40, 99.9)
+        self.STEP_PENALTY = -0.0035
+        self.ENEMY_HIT_PENALTY = -0.3
+        self.AVOCADO_REWARD = 1.0035
+        self.reward_range = (-1, 1)
 
         self.AVOCADO_COLOR = (0, 255, 0)
         self.AGENT_COLOR = (78, 172, 248)
@@ -38,6 +38,13 @@ class AvocadoRunEnv(Env):
         self.aggressive_enemies = aggressive_enemies
         self.grid_side_length = 10
         self.action_space = Discrete(5)
+        self.action_dict = {
+            0: "up",
+            1: "right",
+            2: "down",
+            3: "left",
+            4: "do_nothing",
+        }
         self.observation_space = Box(
             low=0, high=255,
             shape=(self.grid_side_length, self.grid_side_length, 3),
