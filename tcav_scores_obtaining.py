@@ -82,4 +82,4 @@ tcav_df = pd.DataFrame(tcav_results)
 print(tcav_df)
 
 tcav_df.to_csv(
-    f'tcav_data/tcav_scores/{TRAIN_RUN_NAME}/{MODEL_NAME}/tcav_scores.csv', index=False)
+    f'tcav_explanations/{TRAIN_RUN_NAME}/{MODEL_NAME}/tcav_scores.csv', index=False)
