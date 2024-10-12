@@ -10,15 +10,8 @@ import os
 train_run_names = ["wild_glitter_14", "eager_disco_16"]
 model_names = ["best_model", "best_model"]
 
-action_dict = {
-    0: "up",
-    1: "right",
-    2: "down",
-    3: "left",
-    4: "do_nothing",
-}
-
 env = gym.make(id="AvocadoRun-v0")
+action_dict = env.unwrapped.action_dict
 
 for i in range(len(train_run_names)):
     train_run_name = train_run_names[i]
