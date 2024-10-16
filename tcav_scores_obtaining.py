@@ -54,22 +54,18 @@ def calculate_gradients(model, layer_index, observations, target_class):
 
     activations_tensor = tf.convert_to_tensor(activations)
 
-    if output_model:
-        with tf.GradientTape() as tape:
-            tape.watch(activations_tensor)
-            output = output_model(
-                activations_tensor,
-                training=False
-            )
-            class_output = output[:, target_class]
+    with tf.GradientTape() as tape:
+        tape.watch(activations_tensor)
+        output = output_model(
+            activations_tensor,
+            training=False
+        ) if output_model else activations_tensor
+        class_output = output[:, target_class]
 
-        gradient = tape.gradient(
-            target=class_output,
-            sources=activations_tensor
-        )
-    else:
-        # If no output_model exists (i.e., last layer), derivatives are ones
-        gradient = tf.ones_like(activations_tensor)
+    gradient = tape.gradient(
+        target=class_output,
+        sources=activations_tensor
+    )
 
     gradients_flat = tf.reshape(gradient, (gradient.shape[0], -1)).numpy()
 
@@ -79,6 +75,7 @@ def calculate_gradients(model, layer_index, observations, target_class):
 with tqdm(total=total_iterations, desc="Calculating TCAV scores", unit="score") as pbar:
     for target_class in TARGET_CLASSES:
 
+        # Using observations classified as a specific class by the model as ground truth for that class
         observations_classified_as_target_class = ObservationHandler.load_observations(
             file_path=f"tcav_data/observations/model_specific/{TRAIN_RUN_NAME}/{MODEL_NAME}/observations_where_best_class_{target_class}.npy",
             normalize=True,
