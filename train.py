@@ -4,10 +4,6 @@ from DoubleDQNAgent import DoubleDQNAgent
 
 config = {
     "project_name": "AvocadoRun",
-    "step_penalty": -0.1,
-    "enemy_hit_penalty": -20,
-    "avocado_reward": 100,
-
     "replay_buffer_size": 100_000,
     "min_replay_buffer_size": 10_000,
     "minibatch_size": 64,
@@ -26,8 +22,6 @@ env = gym.make(id="AvocadoRun-v0", render_mode="human")
 
 agent = DoubleDQNAgent(
     env=env,
-    model_path=None,
-    learning_rate=config["learning_rate"]
 )
 
-agent.train(config=config, track_metrics=True)
+agent.train(config=config, use_wandb=False)

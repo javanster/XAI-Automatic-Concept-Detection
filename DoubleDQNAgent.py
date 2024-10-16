@@ -15,20 +15,20 @@ import os
 
 
 class DoubleDQNAgent:
-    def __init__(self, env, learning_rate=0.01, model_path=None):
+    def __init__(self, env):
         self.env = env
 
         if not isinstance(env.action_space, gym.spaces.Discrete):
             raise ValueError(
                 "DoubleDQNAgent only supports discrete action spaces.")
 
-        online_model = load_model(
+        self.best_tumbling_window_average = float("-inf")
+
+    def _set_models(self, learning_rate=0.001, model_path=None):
+        self.online_model = load_model(
             model_path) if model_path else self._create_model(learning_rate=learning_rate)
-        self.online_model = online_model
         self.target_model = self._create_model(learning_rate=learning_rate)
         self.target_model.set_weights(self.online_model.get_weights())
-
-        self.best_tumbling_window_average = float("-inf")
 
     def _create_model(self, learning_rate):
         model = Sequential()
@@ -47,7 +47,7 @@ class DoubleDQNAgent:
     def _update_replay_buffer(self, transition):
         self.replay_buffer.append(transition)
 
-    def _train_network(self, terminal_state, min_replay_buffer_size, minibatch_size, discount):
+    def _train_network(self, min_replay_buffer_size, minibatch_size, discount):
         if len(self.replay_buffer) < min_replay_buffer_size:
             return
 
@@ -87,6 +87,7 @@ class DoubleDQNAgent:
         )
 
     def train(self, config, use_wandb=False, use_sweep=False):
+
         if use_wandb:
             if use_sweep:
                 wandb.init()
@@ -109,6 +110,7 @@ class DoubleDQNAgent:
             prop_steps_epsilon_decay = wandb.config.prop_steps_epsilon_decay
             min_epsilon = wandb.config.min_epsilon
             episode_metrics_window = wandb.config.episode_metrics_window
+            learning_rate = wandb.config.learning_rate
 
         else:
             replay_buffer_size = config["replay_buffer_size"]
@@ -123,6 +125,11 @@ class DoubleDQNAgent:
             prop_steps_epsilon_decay = config["prop_steps_epsilon_decay"]
             min_epsilon = config["min_epsilon"]
             episode_metrics_window = config["episode_metrics_window"]
+            learning_rate = config["learning_rate"]
+
+        self._set_models(
+            learning_rate=learning_rate,
+        )
 
         self.replay_buffer = deque(maxlen=replay_buffer_size)
 
@@ -172,7 +179,7 @@ class DoubleDQNAgent:
 
                     if steps_passed % training_frequency == 0:
                         self._train_network(
-                            terminated, min_replay_buffer_size, minibatch_size, discount)
+                            min_replay_buffer_size, minibatch_size, discount)
 
                     if steps_passed % update_target_every == 0:
                         self.target_model.set_weights(
@@ -224,9 +231,13 @@ class DoubleDQNAgent:
 
             self.env.close()
 
-    def test(self, episodes=10, env=None):
+    def test(self, model_path, episodes=10, env=None):
         if env:
             self.env = env
+
+        self._set_models(
+            model_path=model_path,
+        )
 
         for _ in range(episodes):
 
