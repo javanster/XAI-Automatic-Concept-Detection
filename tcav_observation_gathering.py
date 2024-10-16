@@ -73,6 +73,6 @@ ObservationHandler.save_observations_specific_output_classes(
     env=normal_env,
     model=model,
     output_classes=OUTPUT_CLASSES,
-    num_observations=100,
+    num_observations=1000,
     file_path_base=file_path_base
 )
