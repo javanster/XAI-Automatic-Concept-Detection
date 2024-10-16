@@ -83,7 +83,7 @@ class DoubleDQNAgent:
             np.array(X) / 255, np.array(y),
             batch_size=minibatch_size,
             verbose=0,
-            shuffle=False if terminal_state else None,  # What function does this have?
+            shuffle=False  # Sampling from the replay buffer has already shuffled the data
         )
 
     def train(self, config, use_wandb=False, use_sweep=False):
