@@ -86,33 +86,50 @@ class DoubleDQNAgent:
             shuffle=False if terminal_state else None,  # What function does this have?
         )
 
-    def train(self, config, track_metrics=False):
-        replay_buffer_size = config["replay_buffer_size"]
-        min_replay_buffer_size = config["min_replay_buffer_size"]
-        minibatch_size = config["minibatch_size"]
-        discount = config["discount"]
-        training_frequency = config["training_frequency"]
-        update_target_every = config["update_target_every"]
-        steps_to_train = config["steps_to_train"]
+    def train(self, config, use_wandb=False, use_sweep=False):
+        if use_wandb:
+            if use_sweep:
+                wandb.init()
+            else:
+                wandb.init(
+                    project=config["project_name"],
+                    config=config,
+                    mode="online"
+                )
+
+            replay_buffer_size = wandb.config.replay_buffer_size
+            min_replay_buffer_size = wandb.config.min_replay_buffer_size
+            minibatch_size = wandb.config.minibatch_size
+            discount = wandb.config.discount
+            training_frequency = wandb.config.training_frequency
+            update_target_every = wandb.config.update_target_every
+            steps_to_train = wandb.config.steps_to_train
+            epsilon = wandb.config.starting_epsilon
+            starting_epsilon = wandb.config.starting_epsilon
+            prop_steps_epsilon_decay = wandb.config.prop_steps_epsilon_decay
+            min_epsilon = wandb.config.min_epsilon
+            episode_metrics_window = wandb.config.episode_metrics_window
+
+        else:
+            replay_buffer_size = config["replay_buffer_size"]
+            min_replay_buffer_size = config["min_replay_buffer_size"]
+            minibatch_size = config["minibatch_size"]
+            discount = config["discount"]
+            training_frequency = config["training_frequency"]
+            update_target_every = config["update_target_every"]
+            steps_to_train = config["steps_to_train"]
+            epsilon = config["starting_epsilon"]
+            starting_epsilon = config["starting_epsilon"]
+            prop_steps_epsilon_decay = config["prop_steps_epsilon_decay"]
+            min_epsilon = config["min_epsilon"]
+            episode_metrics_window = config["episode_metrics_window"]
 
         self.replay_buffer = deque(maxlen=replay_buffer_size)
-
-        epsilon = config["starting_epsilon"]
-        starting_epsilon = config["starting_epsilon"]
-        prop_steps_epsilon_decay = config["prop_steps_epsilon_decay"]
-        min_epsilon = config["min_epsilon"]
 
         num_decay_steps = steps_to_train * prop_steps_epsilon_decay
 
         epsilon_decay = (
             min_epsilon / starting_epsilon) ** (1 / num_decay_steps)
-
-        if track_metrics:
-            wandb.init(
-                project=config["project_name"],
-                config=config,
-                mode="online"
-            )
 
         if not os.path.exists("models"):
             os.makedirs("models")
@@ -121,7 +138,7 @@ class DoubleDQNAgent:
         np.random.seed(28)
         tf.random.set_seed(28)
 
-        rewards_queue = deque(maxlen=config["episode_metrics_window"])
+        rewards_queue = deque(maxlen=episode_metrics_window)
 
         steps_passed = 0
         episodes_passed = 0
@@ -167,7 +184,7 @@ class DoubleDQNAgent:
                         epsilon *= epsilon_decay
                         epsilon = max(min_epsilon, epsilon)
 
-                    if track_metrics:
+                    if use_wandb:
                         wandb.log({
                             "step": steps_passed,
                             "epsilon": epsilon,
@@ -184,12 +201,12 @@ class DoubleDQNAgent:
                     "episode_reward": episode_reward
                 }
 
-                if len(rewards_queue) >= config["episode_metrics_window"]:
+                if len(rewards_queue) >= episode_metrics_window:
                     average_reward = sum(rewards_queue) / \
-                        config["episode_metrics_window"]
+                        episode_metrics_window
                     log_data["rolling_window_average_reward"] = average_reward
 
-                    if episodes_passed % config["episode_metrics_window"] == 0:
+                    if episodes_passed % episode_metrics_window == 0:
                         min_reward = min(rewards_queue)
                         max_reward = max(rewards_queue)
                         log_data["tumbling_window_average_reward"] = average_reward
@@ -202,7 +219,7 @@ class DoubleDQNAgent:
                             self.online_model.save(
                                 f"models/model_{average_reward:_>9.4f}avg_{max_reward:_>9.4f}max_{min_reward:_>9.4f}min__{int(time.time())}.keras")
 
-                if track_metrics:
+                if use_wandb:
                     wandb.log(log_data)
 
             self.env.close()
