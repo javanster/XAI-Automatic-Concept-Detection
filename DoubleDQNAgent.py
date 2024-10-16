@@ -98,34 +98,21 @@ class DoubleDQNAgent:
                     mode="online"
                 )
 
-            replay_buffer_size = wandb.config.replay_buffer_size
-            min_replay_buffer_size = wandb.config.min_replay_buffer_size
-            minibatch_size = wandb.config.minibatch_size
-            discount = wandb.config.discount
-            training_frequency = wandb.config.training_frequency
-            update_target_every = wandb.config.update_target_every
-            steps_to_train = wandb.config.steps_to_train
-            epsilon = wandb.config.starting_epsilon
-            starting_epsilon = wandb.config.starting_epsilon
-            prop_steps_epsilon_decay = wandb.config.prop_steps_epsilon_decay
-            min_epsilon = wandb.config.min_epsilon
-            episode_metrics_window = wandb.config.episode_metrics_window
-            learning_rate = wandb.config.learning_rate
+            config = wandb.config
 
-        else:
-            replay_buffer_size = config["replay_buffer_size"]
-            min_replay_buffer_size = config["min_replay_buffer_size"]
-            minibatch_size = config["minibatch_size"]
-            discount = config["discount"]
-            training_frequency = config["training_frequency"]
-            update_target_every = config["update_target_every"]
-            steps_to_train = config["steps_to_train"]
-            epsilon = config["starting_epsilon"]
-            starting_epsilon = config["starting_epsilon"]
-            prop_steps_epsilon_decay = config["prop_steps_epsilon_decay"]
-            min_epsilon = config["min_epsilon"]
-            episode_metrics_window = config["episode_metrics_window"]
-            learning_rate = config["learning_rate"]
+        replay_buffer_size = config["replay_buffer_size"]
+        min_replay_buffer_size = config["min_replay_buffer_size"]
+        minibatch_size = config["minibatch_size"]
+        discount = config["discount"]
+        training_frequency = config["training_frequency"]
+        update_target_every = config["update_target_every"]
+        steps_to_train = config["steps_to_train"]
+        epsilon = config["starting_epsilon"]
+        starting_epsilon = config["starting_epsilon"]
+        prop_steps_epsilon_decay = config["prop_steps_epsilon_decay"]
+        min_epsilon = config["min_epsilon"]
+        episode_metrics_window = config["episode_metrics_window"]
+        learning_rate = config["learning_rate"]
 
         self._set_models(
             learning_rate=learning_rate,
