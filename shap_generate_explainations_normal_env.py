@@ -1,8 +1,8 @@
 from shap import DeepExplainer
 from shap_image_plot import shap_image_plot
+from keras.api.saving import load_model
 import gymnasium as gym
 import avocado_run
-from DoubleDQNAgent import DoubleDQNAgent
 from ObservationHandler import ObservationHandler
 import matplotlib.pyplot as plt
 import os
@@ -17,10 +17,7 @@ for i in range(len(train_run_names)):
     train_run_name = train_run_names[i]
     model_name = model_names[i]
 
-    agent = DoubleDQNAgent(
-        env=env,
-        model_path=f"models/{train_run_name}/{model_name}.keras"
-    )
+    model = load_model(f"models/{train_run_name}/{model_name}.keras")
 
     background_observations = ObservationHandler.load_observations(
         file_path="shap_data/observations/normal_environment/random_observations.npy", normalize=True)
@@ -37,11 +34,11 @@ for i in range(len(train_run_names)):
             if len(observations_to_explain) > 0:
                 explainer = DeepExplainer(
                     data=background_observations,
-                    model=agent.online_model
+                    model=model
                 )
 
                 shap_values = explainer.shap_values(observations_to_explain)
-                q_values = agent.online_model.predict(observations_to_explain)
+                q_values = model.predict(observations_to_explain)
 
                 num_actions = env.action_space.n
                 shap_values_list = []
