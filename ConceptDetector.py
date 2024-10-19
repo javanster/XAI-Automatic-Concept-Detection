@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class ConceptDetector:
     """
     A class to detect the presence of specific directional concepts in the AvocadoRunEnv environment.
@@ -9,6 +12,26 @@ class ConceptDetector:
         1: "avo_right_of_agent",
         2: "avo_below_agent",
         3: "avo_left_of_agent",
+        4: "random_observation",
+        5: "enemy_close_to_agent",
+        6: "avocado_visible",
+        7: "agent_close_to_avocado",
+        8: "enemy_within_3_left",
+        9: "enemy_within_3_right",
+        10: "enemy_within_3_up",
+        11: "enemy_within_3_down",
+        12: "enemy_2_steps_left",
+        13: "enemy_2_steps_right",
+        14: "enemy_2_steps_up",
+        15: "enemy_2_steps_down",
+        16: "enemy_1_step_left",
+        17: "enemy_1_step_right",
+        18: "enemy_1_step_up",
+        19: "enemy_1_step_down",
+        20: "agent_against_left_wall",
+        21: "agent_against_right_wall",
+        22: "agent_against_upper_wall",
+        23: "agent_against_bottom_wall",
     }
 
     @staticmethod
@@ -141,4 +164,381 @@ class ConceptDetector:
             return True
 
         # If no avocado meets the conditions, return False
+        return False
+
+    def is_concept_4_present(env):
+        """
+        For sanity checking TCAV scores. Returns True roughly 50 % of the time.
+
+        :param env: The current environment instance (AvocadoRunEnv), unused
+        :return: True or False, roughly 50 % of the time each
+        """
+        if np.random.random() > 0.5:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_5_present(env):
+        """
+        Checks whether Concept 5 is present in the current state of the environment.
+        Concept 5: At least one enemy is within a Manhattan distance of 3 from the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 5 is present, otherwise False.
+        """
+        agent = env.unwrapped.agent
+        enemies = env.unwrapped.enemies
+
+        for enemy in enemies:
+            distance = abs(agent.x - enemy.x) + abs(agent.y - enemy.y)
+            if distance <= 3:
+                return True
+        return False
+
+    @staticmethod
+    def is_concept_6_present(env):
+        """
+        Checks whether Concept 6 is present in the current state of the environment.
+        Concept 6: All avocados are visible, meaning no avocado shares its position with any enemy.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 6 is present, otherwise False.
+        :raises ValueError: If there are more avocados in the environment than enemies.
+        """
+
+        if (len(env.unwrapped.avocados) > len(env.unwrapped.enemies)):
+            raise ValueError(
+                "Number of enemies in the environment must be greater than or equal to the number of avocados, in order for all avocados to be hidden."
+            )
+
+        avocados = env.unwrapped.avocados
+        enemies = env.unwrapped.enemies
+
+        for avocado in avocados:
+            for enemy in enemies:
+                if avocado == enemy:
+                    return False
+        return True
+
+    @staticmethod
+    def is_concept_7_present(env):
+        """
+        Checks whether Concept 7 is present in the current state of the environment.
+        Concept 7: The agent is close to at least one avocado, defined as being within a Manhattan distance of 3.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 7 is present, otherwise False.
+        """
+        agent = env.unwrapped.agent
+        avocados = env.unwrapped.avocados
+
+        for avocado in avocados:
+            distance = abs(agent.x - avocado.x) + abs(agent.y - avocado.y)
+            if distance <= 3:
+                return True
+        return False
+
+    @staticmethod
+    def is_concept_8_present(env):
+        """
+        Concept 8: Enemy within 3 steps directly to the left of the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 8 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        # Check if enemy is directly to the left within 3 steps
+        if enemy.y == agent.y and (agent.x - enemy.x) in range(1, 4):
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_9_present(env):
+        """
+        Concept 9: Enemy within 3 steps directly to the right of the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 9 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        if enemy.y == agent.y and (enemy.x - agent.x) in range(1, 4):
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_10_present(env):
+        """
+        Concept 10: Enemy within 3 steps directly above the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 10 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        if enemy.x == agent.x and (agent.y - enemy.y) in range(1, 4):
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_11_present(env):
+        """
+        Concept 11: Enemy within 3 steps directly below the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 11 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        if enemy.x == agent.x and (enemy.y - agent.y) in range(1, 4):
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_12_present(env):
+        """
+        Concept 12: Enemy is exactly 2 steps directly to the left of the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 12 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        if enemy.y == agent.y and (agent.x - enemy.x) == 2:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_13_present(env):
+        """
+        Concept 13: Enemy is exactly 2 steps directly to the right of the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 13 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        if enemy.y == agent.y and (enemy.x - agent.x) == 2:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_14_present(env):
+        """
+        Concept 14: Enemy is exactly 2 steps directly above the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 14 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        if enemy.x == agent.x and (agent.y - enemy.y) == 2:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_15_present(env):
+        """
+        Concept 15: Enemy is exactly 2 steps directly below the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 15 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        if enemy.x == agent.x and (enemy.y - agent.y) == 2:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_16_present(env):
+        """
+        Concept 16: Enemy is exactly 1 step directly to the left of the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 16 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        if enemy.y == agent.y and (agent.x - enemy.x) == 1:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_17_present(env):
+        """
+        Concept 17: Enemy is exactly 1 step directly to the right of the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 17 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        if enemy.y == agent.y and (enemy.x - agent.x) == 1:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_18_present(env):
+        """
+        Concept 18: Enemy is exactly 1 step directly above the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 18 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        if enemy.x == agent.x and (agent.y - enemy.y) == 1:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_19_present(env):
+        """
+        Concept 19: Enemy is exactly 1 step directly below the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 19 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Only provide an env with 1 enemy, to avoid confusing results"
+            )
+
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        if enemy.x == agent.x and (enemy.y - agent.y) == 1:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_20_present(env):
+        """
+        Concept 20: Agent is against the left wall.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 20 is present, otherwise False.
+        """
+        agent = env.unwrapped.agent
+        if agent.x == 0:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_21_present(env):
+        """
+        Concept 21: Agent is against the right wall.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 21 is present, otherwise False.
+        """
+        agent = env.unwrapped.agent
+        if agent.x == env.unwrapped.grid_side_length - 1:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_22_present(env):
+        """
+        Concept 22: Agent is against the upper wall.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 22 is present, otherwise False.
+        """
+        agent = env.unwrapped.agent
+        if agent.y == 0:
+            return True
+        return False
+
+    @staticmethod
+    def is_concept_23_present(env):
+        """
+        Concept 23: Agent is against the bottom wall.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 23 is present, otherwise False.
+        """
+        agent = env.unwrapped.agent
+        if agent.y == env.unwrapped.grid_side_length - 1:
+            return True
         return False
