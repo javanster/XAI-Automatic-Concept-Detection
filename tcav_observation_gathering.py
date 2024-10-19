@@ -1,8 +1,7 @@
 from ConceptDetector import ConceptDetector
 from ObservationHandler import ObservationHandler
-import gymnasium as gym
-import avocado_run
 from keras.api.saving import load_model
+from concept_observation_args import concept_observations_args
 
 
 ######################## GATHERING OF OBSERVATIONS WHERE CERTAIN CONCEPTS EITHER ARE OR ARE NOT PRESENT IN THE OBSERVATION ########################
@@ -20,27 +19,6 @@ def get_other_file_path(concept_num):
     return f"{OTHER_FILE_PATH_BASE}{concept_num}.npy"
 
 
-normal_env = gym.make(id="AvocadoRun-v0", num_avocados=1, num_enemies=2)
-
-concept_observations_args = [
-    {
-        "env": normal_env,
-        "is_concept_in_observation": ConceptDetector.is_concept_0_present
-    },
-    {
-        "env": normal_env,
-        "is_concept_in_observation": ConceptDetector.is_concept_1_present
-    },
-    {
-        "env": normal_env,
-        "is_concept_in_observation": ConceptDetector.is_concept_2_present
-    },
-    {
-        "env": normal_env,
-        "is_concept_in_observation": ConceptDetector.is_concept_3_present
-    },
-]
-
 for i, args in enumerate(concept_observations_args):
     ObservationHandler.save_observations_given_concept(
         **args,
@@ -49,18 +27,19 @@ for i, args in enumerate(concept_observations_args):
         file_path_other=get_other_file_path(i)
     )
 
-# View 4 observations of each concept
+# View 3 observations of each concept
 for i in range(len(concept_observations_args)):
-    for j in range(4):
+    for j in range(3):
         ObservationHandler.show_observation(
             file_path=get_concept_file_path(i),
-            observation_index=j
+            observation_index=j,
+            title=f"Concept: {ConceptDetector.concept_name_dict.get(i)}"
         )
 
 
 ######################## GATHERING OF OBSERVATIONS WHERE THE MODEL OUTPUTS A SPECIFIC CLASS AS THE CLASS OF HIGHEST VALUE ########################
 
-OUTPUT_CLASSES = [action for action in range(normal_env.action_space.n)]
+""" OUTPUT_CLASSES = [action for action in range(normal_env.action_space.n)]
 TRAIN_RUN_NAME = "eager_disco_16"
 MODEL_NAME = "best_model"
 
@@ -75,4 +54,4 @@ ObservationHandler.save_observations_specific_output_classes(
     output_classes=OUTPUT_CLASSES,
     num_observations=1000,
     file_path_base=file_path_base
-)
+) """
