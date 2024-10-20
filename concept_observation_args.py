@@ -40,7 +40,7 @@ concept_observations_args = [
         "is_concept_in_observation": ConceptDetector.is_concept_7_present
     },
     {
-        "env": env_1_enemy,
+        "env": normal_env,
         "is_concept_in_observation": ConceptDetector.is_concept_8_present
     },
     {
@@ -88,7 +88,7 @@ concept_observations_args = [
         "is_concept_in_observation": ConceptDetector.is_concept_19_present
     },
     {
-        "env": normal_env,
+        "env": env_1_enemy,
         "is_concept_in_observation": ConceptDetector.is_concept_20_present
     },
     {
@@ -102,5 +102,9 @@ concept_observations_args = [
     {
         "env": normal_env,
         "is_concept_in_observation": ConceptDetector.is_concept_23_present
+    },
+    {
+        "env": normal_env,
+        "is_concept_in_observation": ConceptDetector.is_concept_24_present
     },
 ]

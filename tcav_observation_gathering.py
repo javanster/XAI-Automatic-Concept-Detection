@@ -2,6 +2,8 @@ from ConceptDetector import ConceptDetector
 from ObservationHandler import ObservationHandler
 from keras.api.saving import load_model
 from concept_observation_args import concept_observations_args
+import gymnasium as gym
+import avocado_run
 
 
 ######################## GATHERING OF OBSERVATIONS WHERE CERTAIN CONCEPTS EITHER ARE OR ARE NOT PRESENT IN THE OBSERVATION ########################
@@ -33,13 +35,15 @@ for i in range(len(concept_observations_args)):
         ObservationHandler.show_observation(
             file_path=get_concept_file_path(i),
             observation_index=j,
-            title=f"Concept: {ConceptDetector.concept_name_dict.get(i)}"
+            title=f"Concept {i}: {ConceptDetector.concept_name_dict.get(i)}"
         )
 
 
 ######################## GATHERING OF OBSERVATIONS WHERE THE MODEL OUTPUTS A SPECIFIC CLASS AS THE CLASS OF HIGHEST VALUE ########################
 
-""" OUTPUT_CLASSES = [action for action in range(normal_env.action_space.n)]
+normal_env = gym.make(id="AvocadoRun-v0")
+
+OUTPUT_CLASSES = [action for action in range(normal_env.action_space.n)]
 TRAIN_RUN_NAME = "eager_disco_16"
 MODEL_NAME = "best_model"
 
@@ -54,4 +58,4 @@ ObservationHandler.save_observations_specific_output_classes(
     output_classes=OUTPUT_CLASSES,
     num_observations=1000,
     file_path_base=file_path_base
-) """
+)
