@@ -86,7 +86,7 @@ def cav_sensitivity_plot(
     ax.set_zlim(0, 1.0)
     ax.set_axisbelow(False)
     ax.set_title(
-        f"Concept {concept_index}: {concept_name}", fontsize=50, y=0.95)
+        f"Concept {concept_index}: {concept_name}", fontsize=80, y=0.95)
     ax.set_xlabel("Layer", fontsize=30, labelpad=200, zorder=10)
     ax.set_ylabel("Training steps", fontsize=30, labelpad=75, zorder=10)
     ax.set_zlabel("CAV Sensitivity", fontsize=30, labelpad=75, zorder=10)
