@@ -39,7 +39,7 @@ class ObservationHandler:
             observations=observations, file_path=file_path)
 
     @staticmethod
-    def show_observation(file_path, observation_index):
+    def show_observation(file_path, observation_index, title=None):
         """
         Parameters:
         - file_path (str): Path to save the NumPy array file.
@@ -51,6 +51,8 @@ class ObservationHandler:
         _, ax = plt.subplots(figsize=(6, 6))
         ax.imshow(observation, interpolation='nearest')
         ax.axis('off')
+        if title:
+            plt.title(title)
         plt.show()
 
     @staticmethod
