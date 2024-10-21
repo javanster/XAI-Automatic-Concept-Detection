@@ -12,6 +12,8 @@ SAVE = True
 
 for concept_index in ConceptDetector.concept_name_dict.keys():
 
+    print(f"Generating cav sensitivity plot for concept {concept_index}")
+
     cav_sensitivity_plot(
         data_file_path=f"tcav_data/cav_sensitivities_during_training/{TRAIN_RUN_NAME}/{MODEL_NAME}/model_sensitivities.csv",
         concept_index=concept_index,
@@ -24,6 +26,6 @@ for concept_index in ConceptDetector.concept_name_dict.keys():
         filename = f"cav_sensitivities_concept_{concept_index}.png"
         filepath = os.path.join(
             f"tcav_data/cav_sensitivities_during_training/{TRAIN_RUN_NAME}/{MODEL_NAME}/", filename)
-        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.savefig(filepath, dpi=40, bbox_inches='tight')
 
     plt.close()
