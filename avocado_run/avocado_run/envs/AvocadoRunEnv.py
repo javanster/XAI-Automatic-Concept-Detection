@@ -132,13 +132,14 @@ class AvocadoRunEnv(Env):
 
     def step(self, action):
         self.episode_step += 1
-        self.agent.action(action)
 
         for enemy in self.enemies:
             if self.aggressive_enemies or self.episode_step % 3 == 0:
                 enemy.move_towards_target(self.agent)
             else:
                 enemy.random_action()
+
+        self.agent.action(action)
 
         new_observation = self._get_obs()
 
