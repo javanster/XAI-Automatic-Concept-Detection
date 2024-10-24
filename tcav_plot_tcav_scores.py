@@ -1,9 +1,9 @@
 import pandas as pd
-from tcav_bar_plot import tcav_barplot
+from tcav_scores_barplot import tcav_scores_barplot
 import gymnasium as gym
 import avocado_run
 
-TRAIN_RUN_NAME = "eager_disco_16"
+TRAIN_RUN_NAME = "mild_cosmos_59"
 MODEL_NAME = "best_model"
 
 tcav_scores_df = pd.read_csv(
@@ -15,10 +15,20 @@ action_dict = env.unwrapped.action_dict
 
 target_classes = list(action_dict.values())
 
-for target_class in target_classes:
-    tcav_barplot(
-        df=tcav_scores_df,
-        target_class_name=target_class,
-        show=True,
-        file_path_for_saving=f"tcav_explanations/{TRAIN_RUN_NAME}/{MODEL_NAME}/tcav_barplot_target_class_{target_class}.png"
-    )
+concept_indices = sorted(tcav_scores_df['concept_index'].unique())
+concept_n = len(concept_indices)
+
+for i in range(0, concept_n, 5):
+    # Create a subset of the concept indices for this partition, containing max 5 unique concepts
+    current_concept_indices = concept_indices[i:i + 5]
+
+    subset_df = tcav_scores_df[tcav_scores_df['concept_index'].isin(
+        current_concept_indices)]
+
+    for target_class in target_classes:
+        tcav_scores_barplot(
+            df=subset_df,
+            target_class_name=target_class,
+            show=True,
+            file_path_for_saving=f"tcav_explanations/{TRAIN_RUN_NAME}/{MODEL_NAME}/tcav_barplot_target_class_{target_class}_concepts_{i}-{i+4}.png"
+        )

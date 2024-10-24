@@ -5,11 +5,14 @@ import numpy as np
 sns.set_theme(style="darkgrid")
 
 
-def tcav_barplot(df, target_class_name, show=True, file_path_for_saving=None):
+def tcav_scores_barplot(df, target_class_name, show=True, file_path_for_saving=None):
     """
     Creates a grouped bar plot for TCAV scores for a specific target class.
     Displays the y-value (tcav_score) above each bar.
     """
+    concept_indices = sorted(df['concept_index'].unique())
+    if len(concept_indices) > 5:
+        raise ValueError("The plot can only handle 5 concepts at a time!")
 
     df_filtered = df[df['action'] == target_class_name]
     num_layers = len(df['layer_name'].unique())
