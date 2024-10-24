@@ -11,7 +11,7 @@ from keras.api.models import Model
 from keras.api.layers import Input
 
 
-TRAIN_RUN_NAME = "eager_disco_16"
+TRAIN_RUN_NAME = "mild_cosmos_59"
 MODEL_NAME = "best_model"
 
 model = load_model(f"models/{TRAIN_RUN_NAME}/{MODEL_NAME}.keras")
@@ -103,7 +103,7 @@ with tqdm(total=total_iterations, desc="Calculating TCAV scores", unit="score") 
                 tcav_results.append({
                     'target_class': target_class,
                     'action': action_dict[target_class],
-                    'concept_id': concept,
+                    'concept_index': concept,
                     'concept_name': ConceptDetector.concept_name_dict[concept],
                     'layer_index': layer_index,
                     'layer_name': model.layers[layer_index].name,
