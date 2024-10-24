@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score
 from ConceptDetector import ConceptDetector
 import pandas as pd
 
-TRAIN_RUN_NAME = "eager_disco_16"
+TRAIN_RUN_NAME = "mild_cosmos_59"
 MODEL_NAME = "best_model"
 
 model = load_model(f"models/{TRAIN_RUN_NAME}/{MODEL_NAME}.keras")
@@ -29,7 +29,7 @@ def get_activations(activation_model, observations):
     return activations
 
 
-accuracy_results = []
+classifier_results = []
 
 for layer_index in LAYER_INDEXES:
 
@@ -68,22 +68,25 @@ for layer_index in LAYER_INDEXES:
                        non_concept_activations_for_layer])
         y = np.concatenate([labels_with_concept, labels_without_concept])
 
-        X_train, X_test, y_train, y_test = train_test_split(
+        X_train, X_val, y_train, y_val = train_test_split(
             X, y, test_size=0.2, random_state=42)
 
-        clf = LogisticRegression(max_iter=1000, random_state=42)
-        clf.fit(X_train, y_train)
+        clf = LogisticRegression(
+            penalty='l1', solver='saga', C=1, max_iter=1000, random_state=42)
 
-        y_pred = clf.predict(X_test)
-        accuracy = accuracy_score(y_test, y_pred)
+        y_pred = clf.predict(X_val)
+        original_accuracy = accuracy_score(y_val, y_pred)
 
-        accuracy_results.append(
+        # Ensures score is between 0 and 1, where 0 is equal to random guess or worse
+        classifier_score = max(2 * (original_accuracy - 0.5), 0)
+
+        classifier_results.append(
             {
                 "concept_index": concept,
                 "concept_name": ConceptDetector.concept_name_dict[concept],
                 "layer_index": layer_index,
                 "layer_name": model.layers[layer_index].name,
-                "classifier_accuracy": accuracy
+                "classifier_score": classifier_score
             }
         )
 
@@ -92,9 +95,12 @@ for layer_index in LAYER_INDEXES:
         np.save(
             f"tcav_data/cavs/{TRAIN_RUN_NAME}/{MODEL_NAME}/concept_{concept}_layer_{layer_index}_cav.npy", cav)
 
-accuracy_results_df = pd.DataFrame(accuracy_results)
+        print(
+            f"CAV obtained for concept {concept}, with classifier score {classifier_score}")
 
-print(accuracy_results_df)
+classifier_results_df = pd.DataFrame(classifier_results)
 
-accuracy_results_df.to_csv(
-    f"tcav_data/cavs/{TRAIN_RUN_NAME}/{MODEL_NAME}/cav_accuracies.csv", index=False)
+print(classifier_results_df)
+
+classifier_results_df.to_csv(
+    f"tcav_data/cavs/{TRAIN_RUN_NAME}/{MODEL_NAME}/classifier_scores.csv", index=False)
