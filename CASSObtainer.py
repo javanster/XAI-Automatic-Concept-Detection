@@ -9,14 +9,29 @@ from tqdm import tqdm
 from sklearn.metrics import accuracy_score
 
 
-class CavSensitivityObtainer:
+class CASSObtainer:
+    """
+    A class to obtain Concept Activation Separation Score (CASS) for various concepts across layers in a neural network.
+
+    This class computes the Concept Activation Separation Score (CASS) by training a logistic regression classifier 
+    to distinguish between activations of concepts and non-concepts across different layers of a neural network. The 
+    CASS measures how well the network can separate concept activations from non-concept activations at different layers 
+    and training steps.
+
+    Parameters
+    ----------
+    concept_observations_dict : dict
+        A dictionary containing file paths to the observations for each concept and non-concept. It should map each 
+        concept to a dictionary with keys "concept_obs_filepath" and "not_concept_obs_filepath".
+
+    """
 
     def __init__(self, concept_observations_dict):
         self.concept_observations_dict = concept_observations_dict
         self.concepts = [c for c in ConceptDetector.concept_name_dict.keys()]
-        self.cav_sensitivities_df = pd.DataFrame(
+        self.classifier_scores_df = pd.DataFrame(
             columns=["concept_index", "concept_name", "layer_index",
-                     "layer_name", "cav_sensitivity", "training_step"]
+                     "layer_name", "classifier_score", "training_step"]
         )
 
     @staticmethod
@@ -31,10 +46,10 @@ class CavSensitivityObtainer:
 
         return activations
 
-    def calculate_cav_sensitivity(self, model, training_step, file_path):
+    def calculate_cass(self, model, training_step, file_path):
         layer_indexes = [l for l in range(len(model.layers))]
 
-        cav_sensitivities = []
+        classifier_scores = []
 
         total_len = len(layer_indexes) * len(self.concepts)
         with tqdm(total=total_len, unit="score") as pbar:
@@ -59,12 +74,12 @@ class CavSensitivityObtainer:
                         normalize=True,
                     )
 
-                    concept_activations_for_layer = CavSensitivityObtainer._get_activations(
+                    concept_activations_for_layer = CASSObtainer._get_activations(
                         model=activation_model_for_layer,
                         observations=observations_with_concept
                     )
 
-                    non_concept_activations_for_layer = CavSensitivityObtainer._get_activations(
+                    non_concept_activations_for_layer = CASSObtainer._get_activations(
                         model=activation_model_for_layer,
                         observations=random_observations_without_concept
                     )
@@ -84,31 +99,33 @@ class CavSensitivityObtainer:
                     )
 
                     clf = LogisticRegression(
-                        penalty='l1', solver='saga', C=0.1, max_iter=1000, random_state=42)
+                        penalty='l1', solver='saga', C=1, max_iter=1000, random_state=42)
                     clf.fit(X_train, y_train)
 
                     y_pred = clf.predict(X_val)
                     original_accuracy = accuracy_score(y_val, y_pred)
 
                     # Ensures score is between 0 and 1, where 0 is equal to random guess or worse
-                    cav_sensitivity = max(2 * (original_accuracy - 0.5), 0)
+                    classifier_score = max(2 * (original_accuracy - 0.5), 0)
 
-                    cav_sensitivities.append(
+                    classifier_scores.append(
                         {
                             "concept_index": concept,
                             "concept_name": ConceptDetector.concept_name_dict[concept],
                             "layer_index": layer_index,
                             "layer_name": model.layers[layer_index].name,
-                            "cav_sensitivity": cav_sensitivity,
+                            "classifier_score": classifier_score,
                             "training_step": training_step
                         }
                     )
 
                     pbar.update(1)
+                    print(
+                        f"Classifier score for concept {concept} in layer {layer_index} at training step {training_step}: {classifier_score}")
 
-        self.cav_sensitivities_df = pd.concat(
-            [self.cav_sensitivities_df, pd.DataFrame(cav_sensitivities)],
+        self.classifier_scores_df = pd.concat(
+            [self.classifier_scores_df, pd.DataFrame(classifier_scores)],
             ignore_index=True
         )
 
-        self.cav_sensitivities_df.to_csv(file_path, index=False)
+        self.classifier_scores_df.to_csv(file_path, index=False)

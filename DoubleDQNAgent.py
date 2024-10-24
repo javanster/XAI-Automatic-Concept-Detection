@@ -12,7 +12,7 @@ from keras.api.saving import load_model
 import wandb
 import gymnasium as gym
 import os
-from CavSensitivityObtainer import CavSensitivityObtainer
+from CASSObtainer import CASSObtainer
 
 
 class DoubleDQNAgent:
@@ -249,8 +249,8 @@ class DoubleDQNAgent:
 
         self.env.close()
 
-    def train_with_cav_checkpoints(self, config, cav_file_path, concept_observations_dict, use_wandb=False):
-        cav_sensitivity_obtainer = CavSensitivityObtainer(
+    def train_with_concept_classifier_checkpoints(self, config, cav_file_path, concept_observations_dict, use_wandb=False):
+        cass_obtainer = CASSObtainer(
             concept_observations_dict=concept_observations_dict,
         )
 
@@ -276,7 +276,7 @@ class DoubleDQNAgent:
         min_epsilon = config["min_epsilon"]
         episode_metrics_window = config["episode_metrics_window"]
         learning_rate = config["learning_rate"]
-        obtain_cav_sensitivities_every = config["obtain_cav_sensitivities_every"]
+        obtain_cass_every = config["obtain_cass_every"]
 
         self._set_models(
             learning_rate=learning_rate,
@@ -348,8 +348,8 @@ class DoubleDQNAgent:
                             "epsilon": epsilon,
                         })
 
-                    if steps_passed == 100 or steps_passed % obtain_cav_sensitivities_every == 0:
-                        cav_sensitivity_obtainer.calculate_cav_sensitivity(
+                    if steps_passed == 100 or steps_passed % obtain_cass_every == 0:
+                        cass_obtainer.calculate_cass(
                             model=self.online_model,
                             training_step=steps_passed,
                             file_path=cav_file_path
