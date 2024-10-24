@@ -63,6 +63,16 @@ class Entity:
                 self.move(y=delta)
 
     def random_action(self):
-        # Should always move, so action 4 is omitted
-        rand_act = np.random.randint(0, 4)
+        # Generate possible moves to avoid "do_nothing"
+        possible_moves = []
+        if self.y > 0:
+            possible_moves.append(0)  # Up
+        if self.x < self.grid_side_length - 1:
+            possible_moves.append(1)  # Right
+        if self.y < self.grid_side_length - 1:
+            possible_moves.append(2)  # Down
+        if self.x > 0:
+            possible_moves.append(3)  # Left
+
+        rand_act = random.choice(possible_moves)
         self.action(rand_act)
