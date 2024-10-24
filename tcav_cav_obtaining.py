@@ -8,7 +8,7 @@ from sklearn.metrics import accuracy_score
 from ConceptDetector import ConceptDetector
 import pandas as pd
 
-TRAIN_RUN_NAME = "mild_cosmos_59"
+TRAIN_RUN_NAME = "dutiful_frog_68"
 MODEL_NAME = "best_model"
 
 model = load_model(f"models/{TRAIN_RUN_NAME}/{MODEL_NAME}.keras")
@@ -71,8 +71,8 @@ for layer_index in LAYER_INDEXES:
         X_train, X_val, y_train, y_val = train_test_split(
             X, y, test_size=0.2, random_state=42)
 
-        clf = LogisticRegression(
-            penalty='l1', solver='saga', C=1, max_iter=1000, random_state=42)
+        clf = LogisticRegression(max_iter=1000, random_state=42)
+        clf.fit(X_train, y_train)
 
         y_pred = clf.predict(X_val)
         original_accuracy = accuracy_score(y_val, y_pred)
@@ -96,7 +96,7 @@ for layer_index in LAYER_INDEXES:
             f"tcav_data/cavs/{TRAIN_RUN_NAME}/{MODEL_NAME}/concept_{concept}_layer_{layer_index}_cav.npy", cav)
 
         print(
-            f"CAV obtained for concept {concept}, with classifier score {classifier_score}")
+            f"CAV obtained for concept {concept} in layer {layer_index}, with classifier score {classifier_score}")
 
 classifier_results_df = pd.DataFrame(classifier_results)
 

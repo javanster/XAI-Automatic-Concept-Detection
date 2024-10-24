@@ -1,9 +1,9 @@
-from tcav_ccsat_plot import tcav_cassat_plot
+from tcav_cassat_plot import tcav_cassat_plot
 from ConceptDetector import ConceptDetector
 import matplotlib.pyplot as plt
 import os
 
-TRAIN_RUN_NAME = "rich_dust_64"
+TRAIN_RUN_NAME = "dutiful_frog_68"
 MODEL_NAME = "best_model"
 
 SHOW = False

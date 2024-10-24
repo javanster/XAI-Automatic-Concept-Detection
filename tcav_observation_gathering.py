@@ -6,8 +6,8 @@ import gymnasium as gym
 import avocado_run
 
 
-GATHER_CONCEPT_OBSERVATIONS = True
-GATHER_MODEL_SPECIFIC_OBSERVATIONS = False
+GATHER_CONCEPT_OBSERVATIONS = False
+GATHER_MODEL_SPECIFIC_OBSERVATIONS = True
 
 
 ######################## GATHERING OF OBSERVATIONS WHERE CERTAIN CONCEPTS EITHER ARE OR ARE NOT PRESENT IN THE OBSERVATION ########################
@@ -47,9 +47,10 @@ if GATHER_CONCEPT_OBSERVATIONS:
 if GATHER_MODEL_SPECIFIC_OBSERVATIONS:
 
     normal_env = gym.make(id="AvocadoRun-v0")
+    env_1_enemy = gym.make(id="AvocadoRun-v0", num_enemies=1)
 
     OUTPUT_CLASSES = [action for action in range(normal_env.action_space.n)]
-    TRAIN_RUN_NAME = "mild_cosmos_59"
+    TRAIN_RUN_NAME = "dutiful_frog_68"
     MODEL_NAME = "best_model"
 
     model = load_model(f"models/{TRAIN_RUN_NAME}/{MODEL_NAME}.keras")
@@ -57,9 +58,9 @@ if GATHER_MODEL_SPECIFIC_OBSERVATIONS:
     file_path_base = f"tcav_data/observations/model_specific/{TRAIN_RUN_NAME}/{MODEL_NAME}/observations_where_best_class_"
 
     ObservationHandler.save_observations_specific_output_classes(
-        env=normal_env,
+        env=env_1_enemy,
         model=model,
         output_classes=OUTPUT_CLASSES,
-        num_observations=1000,
+        num_observations=5000,
         file_path_base=file_path_base
     )

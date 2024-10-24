@@ -9,16 +9,17 @@ from tqdm import tqdm
 import tensorflow as tf
 from keras.api.models import Model
 from keras.api.layers import Input
+import matplotlib.pyplot as plt
 
 
-TRAIN_RUN_NAME = "mild_cosmos_59"
+TRAIN_RUN_NAME = "dutiful_frog_68"
 MODEL_NAME = "best_model"
 
 model = load_model(f"models/{TRAIN_RUN_NAME}/{MODEL_NAME}.keras")
 env = gym.make(id="AvocadoRun-v0", num_avocados=1, num_enemies=2)
 action_dict = env.unwrapped.action_dict
 
-LAYER_INDEXES = [l for l in range(len(model.layers))]
+LAYER_INDEXES = [l for l in range(len(model.layers) - 2)]
 CONCEPTS = [concept for concept in ConceptDetector.concept_name_dict.keys()]
 TARGET_CLASSES = [action for action in range(env.action_space.n)]
 
@@ -117,4 +118,4 @@ tcav_df = pd.DataFrame(tcav_results)
 print(tcav_df)
 
 tcav_df.to_csv(
-    f'tcav_explanations/{TRAIN_RUN_NAME}/{MODEL_NAME}/tcav_scores.csv', index=False)
+    f'tcav_explanations/tcav_scores/{TRAIN_RUN_NAME}/{MODEL_NAME}/tcav_scores.csv', index=False)
