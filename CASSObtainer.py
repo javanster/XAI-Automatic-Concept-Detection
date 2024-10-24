@@ -98,8 +98,7 @@ class CASSObtainer:
                         X, y, test_size=0.2, random_state=42
                     )
 
-                    clf = LogisticRegression(
-                        penalty='l1', solver='saga', C=1, max_iter=1000, random_state=42)
+                    clf = LogisticRegression(max_iter=1000, random_state=42)
                     clf.fit(X_train, y_train)
 
                     y_pred = clf.predict(X_val)

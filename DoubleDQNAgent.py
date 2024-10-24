@@ -37,7 +37,8 @@ class DoubleDQNAgent:
         model.add(Conv2D(32, kernel_size=3, activation="relu", padding="same"))
         model.add(Conv2D(64, kernel_size=3, activation="relu", padding="same"))
         model.add(Flatten())
-        model.add(Dense(128, activation="relu"))
+        model.add(Dense(32, activation="relu"))
+        model.add(Dense(32, activation="relu"))
         model.add(Dense(self.env.action_space.n, activation="linear"))
         model.compile(
             loss="mse",
@@ -249,7 +250,7 @@ class DoubleDQNAgent:
 
         self.env.close()
 
-    def train_with_concept_classifier_checkpoints(self, config, cav_file_path, concept_observations_dict, use_wandb=False):
+    def train_with_concept_classifier_checkpoints(self, config, classifier_scores_file_path, concept_observations_dict, use_wandb=False):
         cass_obtainer = CASSObtainer(
             concept_observations_dict=concept_observations_dict,
         )
@@ -352,7 +353,7 @@ class DoubleDQNAgent:
                         cass_obtainer.calculate_cass(
                             model=self.online_model,
                             training_step=steps_passed,
-                            file_path=cav_file_path
+                            file_path=classifier_scores_file_path
                         )
 
                     if steps_passed >= steps_to_train:
