@@ -1,6 +1,6 @@
 import gymnasium as gym
 import avocado_run
-from ObservationHandler import ObservationHandler
+from utils import ObservationHandler
 import time
 
 #################### CUSTOM ENTITY POSITIONS FOR OOD OBSERVATIONS ####################
