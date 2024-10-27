@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib as mpl
 
 
-def tcav_cassat_plot(
+def cassat_plot(
         data_frame_path,
         concept_index,
         training_steps_to_show,
