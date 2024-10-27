@@ -1,6 +1,6 @@
 import gymnasium as gym
 import avocado_run
-from HumanPlayer import HumanPlayer
+from agents import HumanPlayer
 
 env = gym.make(id="AvocadoRun-v0", render_mode="human")
 
