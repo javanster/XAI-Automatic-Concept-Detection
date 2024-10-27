@@ -3,3 +3,5 @@ __pycache__/
 *.egg-info
 /models
 /wandb
+/tcav_data
+/optimal_policy
