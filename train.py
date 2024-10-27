@@ -1,6 +1,6 @@
 import gymnasium as gym
 import avocado_run
-from DoubleDQNAgent import DoubleDQNAgent
+from agents import DoubleDQNAgent
 
 # Based on best hyperparams found using Bayesian Hyperparameter Optimization - See wandb sandy-sweep-16
 config = {

@@ -1,13 +1,13 @@
 import gymnasium as gym
 import avocado_run
 from avocado_run.wrappers import QValueRenderWrapper
-from DoubleDQNAgent import DoubleDQNAgent
+from agents import DoubleDQNAgent
 from keras.api.saving import load_model
 
-MODEL_PATH = "models/eager_disco_16/best_model.keras"
+MODEL_PATH = "models/dutiful_frog_68/best_model.keras"
 
 env = gym.make(id="AvocadoRun-v0", render_mode="human",
-               num_avocados=1, num_enemies=2, aggressive_enemies=False)
+               num_avocados=1, num_enemies=1, aggressive_enemies=False)
 
 agent = DoubleDQNAgent(
     env=env,

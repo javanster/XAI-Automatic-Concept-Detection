@@ -1,7 +1,7 @@
 import wandb
 import gymnasium as gym
 import avocado_run
-from DoubleDQNAgent import DoubleDQNAgent
+from agents import DoubleDQNAgent
 
 
 sweep_configuration = {

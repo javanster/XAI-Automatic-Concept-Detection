@@ -1,6 +1,6 @@
 import gymnasium as gym
 import avocado_run
-from DoubleDQNAgent import DoubleDQNAgent
+from agents import DoubleDQNAgent
 from ConceptDetector import ConceptDetector
 
 concept_observations_dict = {
