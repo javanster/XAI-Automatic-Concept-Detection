@@ -12,7 +12,7 @@ from keras.api.saving import load_model
 import wandb
 import gymnasium as gym
 import os
-from CASSObtainer import CASSObtainer
+from tcav import CASSObtainer
 
 
 class DoubleDQNAgent:
