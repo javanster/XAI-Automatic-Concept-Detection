@@ -1,7 +1,7 @@
 from keras.api.saving import load_model
 import numpy as np
-from ObservationHandler import ObservationHandler
-from ConceptDetector import ConceptDetector
+from utils import ObservationHandler
+from tcav import ConceptDetector
 import gymnasium as gym
 import avocado_run
 import pandas as pd
@@ -9,24 +9,27 @@ from tqdm import tqdm
 import tensorflow as tf
 from keras.api.models import Model
 from keras.api.layers import Input
-import matplotlib.pyplot as plt
+import os
+
+OBSERVATION_TYPES = ["model_specific", "policy_specific", "random"]
 
 
-TRAIN_RUN_NAME = "dutiful_frog_68"
-MODEL_NAME = "best_model"
+def get_observations(observation_type, train_run_name, model_name, target_class, env_name):
+    if observation_type not in OBSERVATION_TYPES:
+        raise ValueError(
+            "Given observation type must be one of the types defined in OBSERVATION_TYPES")
 
-model = load_model(f"models/{TRAIN_RUN_NAME}/{MODEL_NAME}.keras")
-env = gym.make(id="AvocadoRun-v0", num_avocados=1, num_enemies=2)
-action_dict = env.unwrapped.action_dict
+    if observation_type == "model_specific":
+        observation_file_path = f"tcav_data/observations/model_specific_output_class/{train_run_name}/{model_name}/{env_name}/observations_where_best_class_{target_class}.npy"
+    elif observation_type == "policy_specific":
+        observation_file_path = f"tcav_data/observations/policy_specific_output_class/{env_name}/observations_where_best_class_{target_class}.npy"
+    elif observation_type == "random":
+        observation_file_path = f"tcav_data/observations/random_observations/{env_name}.npy"
 
-LAYER_INDEXES = [l for l in range(len(model.layers) - 2)]
-CONCEPTS = [concept for concept in ConceptDetector.concept_name_dict.keys()]
-TARGET_CLASSES = [action for action in range(env.action_space.n)]
-
-tcav_results = []
-
-
-total_iterations = len(TARGET_CLASSES) * len(CONCEPTS) * len(LAYER_INDEXES)
+    return ObservationHandler.load_observations(
+        file_path=observation_file_path,
+        normalize=True,
+    )
 
 
 def calculate_gradients(model, layer_index, observations, target_class):
@@ -73,49 +76,112 @@ def calculate_gradients(model, layer_index, observations, target_class):
     return gradients_flat
 
 
-with tqdm(total=total_iterations, desc="Calculating TCAV scores", unit="score") as pbar:
-    for target_class in TARGET_CLASSES:
+def obtain_tcav_scores(
+        train_run_name,
+        model_name,
+        model,
+        action_dict,
+        layer_indexes,
+        concept_indexes,
+        target_classes,
+        observation_type,
+        env_name,
+        batches,
+):
 
-        # Using observations classified as a specific class by the model as ground truth for that class
-        observations_classified_as_target_class = ObservationHandler.load_observations(
-            file_path=f"tcav_data/observations/model_specific/{TRAIN_RUN_NAME}/{MODEL_NAME}/observations_where_best_class_{target_class}.npy",
-            normalize=True,
+    for ci in concept_indexes:
+        if ci not in ConceptDetector.concept_name_dict.keys():
+            raise ValueError(
+                "All concept indexes provided must be defined in ConceptDetector")
+
+    total_iterations = len(target_classes) * \
+        len(concept_indexes) * len(layer_indexes) * len(batches)
+
+    with tqdm(total=total_iterations, desc="Calculating TCAV scores", unit="score") as pbar:
+
+        for batch in batches:
+
+            tcav_results = []
+
+            for target_class in target_classes:
+
+                observations = get_observations(
+                    observation_type=observation_type,
+                    train_run_name=train_run_name,
+                    model_name=model_name,
+                    target_class=target_class,
+                    env_name=env_name,
+                )
+
+                for layer_index in layer_indexes:
+
+                    gradients = calculate_gradients(
+                        model=model,
+                        layer_index=layer_index,
+                        observations=observations,
+                        target_class=target_class
+                    )
+
+                    for concept_index in concept_indexes:
+
+                        cav_path = f"tcav_data/cavs/{train_run_name}/{model_name}/observation_batch_{batch}/concept_{concept_index}_layer_{layer_index}_cav.npy"
+                        cav = np.load(cav_path)
+
+                        directional_derivatives = np.dot(gradients, cav)
+                        tcav_score = np.mean(directional_derivatives > 0)
+
+                        tcav_results.append({
+                            'target_class': target_class,
+                            'action': action_dict[target_class],
+                            'concept_index': concept_index,
+                            'concept_name': ConceptDetector.concept_name_dict[concept_index],
+                            'layer_index': layer_index,
+                            'layer_name': model.layers[layer_index].name,
+                            'tcav_score': tcav_score
+                        })
+
+                        pbar.update(1)
+
+            tcav_df = pd.DataFrame(tcav_results)
+
+            print(tcav_df)
+
+            file_path = f"tcav_explanations/tcav_scores/{train_run_name}/{model_name}/{observation_type}_observations/tcav_scores_cav_batch_{batch}.csv"
+
+            directory = os.path.dirname(file_path)
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+
+            tcav_df.to_csv(
+                file_path, index=False)
+
+
+if __name__ == "__main__":
+    train_run_name = "dutiful_frog_68"
+    model_name = "best_model"
+
+    model = load_model(f"models/{train_run_name}/{model_name}.keras")
+    env = gym.make(id="AvocadoRun-v0", num_avocados=1, num_enemies=1)
+    env_name = "env_1_enemies_1_avocados"
+    action_dict = env.unwrapped.action_dict
+
+    # Not using the two last layers
+    layer_indexes = [l for l in range(len(model.layers))]
+    concept_indexes = [0, 1, 2, 3, 9, 10, 11, 12]
+    target_classes = [action for action in range(env.action_space.n)]
+    batches = [b for b in range(500)]
+
+    for observation_type in OBSERVATION_TYPES:
+
+        obtain_tcav_scores(
+            train_run_name=train_run_name,
+            model_name=model_name,
+            model=model,
+            action_dict=action_dict,
+            layer_indexes=layer_indexes,
+            concept_indexes=concept_indexes,
+            target_classes=target_classes,
+            observation_type=observation_type,
+            env_name=env_name,
+            batches=batches,
         )
-
-        for layer_index in LAYER_INDEXES:
-
-            target_layer = model.layers[layer_index]
-
-            gradients = calculate_gradients(
-                model=model,
-                layer_index=layer_index,
-                observations=observations_classified_as_target_class,
-                target_class=target_class
-            )
-
-            for concept in CONCEPTS:
-
-                cav_path = f"tcav_data/cavs/{TRAIN_RUN_NAME}/{MODEL_NAME}/concept_{concept}_layer_{layer_index}_cav.npy"
-                cav = np.load(cav_path)
-
-                directional_derivatives = np.dot(gradients, cav)
-                tcav_score = np.mean(directional_derivatives > 0)
-
-                tcav_results.append({
-                    'target_class': target_class,
-                    'action': action_dict[target_class],
-                    'concept_index': concept,
-                    'concept_name': ConceptDetector.concept_name_dict[concept],
-                    'layer_index': layer_index,
-                    'layer_name': model.layers[layer_index].name,
-                    'tcav_score': tcav_score
-                })
-
-                pbar.update(1)
-
-tcav_df = pd.DataFrame(tcav_results)
-
-print(tcav_df)
-
-tcav_df.to_csv(
-    f'tcav_explanations/tcav_scores/{TRAIN_RUN_NAME}/{MODEL_NAME}/tcav_scores.csv', index=False)
