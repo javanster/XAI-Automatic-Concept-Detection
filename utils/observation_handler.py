@@ -2,6 +2,7 @@ from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import os
 
 
 class ObservationHandler:
@@ -11,6 +12,10 @@ class ObservationHandler:
     """
     @staticmethod
     def _save_observations(observations, file_path):
+        directory = os.path.dirname(file_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
         observations_array = np.array(observations, dtype=np.uint8)
         np.save(file_path, observations_array)
 
@@ -154,11 +159,6 @@ class ObservationHandler:
             elif not is_concept_in_observation(env) and len(observations_without_concept) < num_observations_for_each:
                 observations_without_concept.append(observation)
 
-        print(
-            f"Observations with concept gathered: {len(observations_with_concept)}")
-        print(
-            f"Observations without concept gathered: {len(observations_without_concept)}")
-
         random.shuffle(observations_with_concept)
         random.shuffle(observations_without_concept)
 
@@ -219,3 +219,70 @@ class ObservationHandler:
 
             print(
                 f"Collected {len(observations)} observations for output class {ocls}")
+
+    @staticmethod
+    def save_observations_optimal_policy_specific_output_classes(
+        env,
+        policy,
+        state_to_index,
+        output_classes,
+        num_observations,
+        file_path_base
+    ):
+        """
+        Saves observations where the optimal policy outputs specific actions by relying on environment resets.
+        This version removes the maximum resets limit to ensure all required observations are collected.
+
+        Parameters:
+        - env (gym.Env): The AvocadoRun environment instance to gather observations from.
+        - policy (np.ndarray): The optimal policy array, indexed by state index.
+        - state_to_index (dict): Mapping from state tuples to state indices.
+        - output_classes (list of int): A list of target action indices for which observations
+            should be collected.
+        - num_observations (int): Number of observations to save for each specified action.
+        - file_path_base (str): Base file path to save the NumPy array files. The action index
+            will be appended to this base to form the complete file path for each action.
+        """
+        observation_dict = {action: [] for action in output_classes}
+        total_required = num_observations * len(output_classes)
+        collected = 0
+
+        with tqdm(total=total_required, desc="Collecting Observations") as pbar:
+            while any(len(obs) < num_observations for obs in observation_dict.values()):
+                observation, _ = env.reset()
+
+                agent_entity = env.unwrapped.agent
+                enemy_entities = env.unwrapped.enemies
+                avocado_entities = env.unwrapped.avocados
+
+                agent_pos = (agent_entity.x, agent_entity.y)
+                avocado_pos = (avocado_entities[0].x, avocado_entities[0].y)
+                enemy_pos = (enemy_entities[0].x, enemy_entities[0].y)
+
+                state = (agent_pos, avocado_pos, enemy_pos)
+                state_idx = state_to_index.get(state, None)
+
+                if state_idx is None:
+                    # Invalid state; skip to the next reset
+                    continue
+
+                action_idx = policy[state_idx]
+
+                if action_idx in output_classes and len(observation_dict[action_idx]) < num_observations:
+                    observation_dict[action_idx].append(observation)
+                    pbar.update(1)
+                    collected += 1
+
+        for action in output_classes:
+            observations = observation_dict[action]
+            file_path = f"{file_path_base}{action}.npy"
+
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            ObservationHandler._save_observations(
+                observations=observations,
+                file_path=file_path
+            )
+
+            print(
+                f"Collected {len(observations)} observations for action {action}")
