@@ -3,7 +3,7 @@ from shap_image_plot import shap_image_plot
 from keras.api.saving import load_model
 import gymnasium as gym
 import avocado_run
-from ObservationHandler import ObservationHandler
+from utils import ObservationHandler
 import matplotlib.pyplot as plt
 import os
 
