@@ -1,4 +1,4 @@
-from ConceptDetector import ConceptDetector
+from tcav import ConceptDetector
 import gymnasium as gym
 import avocado_run
 
