@@ -119,6 +119,7 @@ class ObservationHandler:
     @staticmethod
     def save_observations_given_concept(
         env,
+        concept_index,
         num_observations_for_each,
         file_path_concept,
         file_path_other,
