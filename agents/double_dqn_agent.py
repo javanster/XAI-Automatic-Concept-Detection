@@ -224,31 +224,47 @@ class DoubleDQNAgent:
         if env:
             self.env = env
 
+        render = True if env.unwrapped.render_mode == "human" else False
+
         self._set_models(
             model_path=model_path,
         )
+
+        episode_rewards = []
 
         for _ in range(episodes):
 
             observation, _ = self.env.reset()
             terminated = False
+            truncated = False
 
-            self.env.render()
+            if render:
+                self.env.render()
 
-            while not terminated:
+            episode_reward = 0
+
+            while not terminated and not truncated:
                 observation_reshaped = np.array(
                     observation).reshape(-1, *self.env.observation_space.shape) / 255.0
                 q_values = self.online_model.predict(observation_reshaped)[0]
                 action = np.argmax(q_values)
 
-                observation, _, terminated, _, _ = self.env.step(
+                observation, reward, terminated, truncated, _ = self.env.step(
                     action=action)
 
-                self.env.render()
+                episode_reward += reward
 
-            time.sleep(2)
+                if render:
+                    self.env.render()
+
+            if render:
+                time.sleep(2)
+
+            episode_rewards.append(episode_reward)
 
         self.env.close()
+
+        return episode_rewards
 
     def train_with_concept_classifier_checkpoints(self, config, classifier_scores_file_path, concept_observations_dict, use_wandb=False):
         cass_obtainer = CASSObtainer(
