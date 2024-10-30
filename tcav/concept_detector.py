@@ -33,6 +33,15 @@ class ConceptDetector:
         22: "agent_against_right_wall",
         23: "agent_against_upper_wall",
         24: "agent_against_bottom_wall",
+        25: "enemy_above_agent",
+        26: "enemy_right_of_agent",
+        27: "enemy_below_agent",
+        28: "enemy_left_of_agent",
+        29: "avo_above_enemy_below",
+        30: "avo_right_enemy_left",
+        31: "avo_below_enemy_above",
+        32: "avo_left_enemy_right",
+
     }
 
     @staticmethod
@@ -562,3 +571,255 @@ class ConceptDetector:
         if agent.y == env.unwrapped.grid_side_length - 1:
             return True
         return False
+
+    @staticmethod
+    def is_concept_25_present(env):
+        """
+        Checks whether Concept 25 is present in the current state of the environment.
+        Concept 25: The enemy is above the agent (more above than any other direction).
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 25 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "This concept only allows for 1 enemy in the environment")
+
+        enemy = env.unwrapped.enemies[0]
+
+        agent_x, agent_y = env.unwrapped.agent.x, env.unwrapped.agent.y
+        enemy_x, enemy_y = enemy.x, enemy.y
+
+        # Calculate differences
+        delta_x = enemy_x - agent_x
+        delta_y = enemy_y - agent_y
+
+        # Enemy is above if delta_y < 0 and |delta_y| > |delta_x|
+        if delta_y < 0 and abs(delta_y) > abs(delta_x):
+            return True
+
+        return False
+
+    @staticmethod
+    def is_concept_26_present(env):
+        """
+        Checks whether Concept 26 is present in the current state of the environment.
+        Concept 26: The enemy is to the right of the agent (more to the right than any other direction).
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 26 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "This concept only allows for 1 enemy in the environment")
+
+        enemy = env.unwrapped.enemies[0]
+
+        agent_x, agent_y = env.unwrapped.agent.x, env.unwrapped.agent.y
+        enemy_x, enemy_y = enemy.x, enemy.y
+
+        # Calculate differences
+        delta_x = enemy_x - agent_x
+        delta_y = enemy_y - agent_y
+
+        # Enemy is to the right if delta_x > 0 and |delta_x| > |delta_y|
+        if delta_x > 0 and abs(delta_x) > abs(delta_y):
+            return True
+
+        return False
+
+    @staticmethod
+    def is_concept_27_present(env):
+        """
+        Checks whether Concept 27 is present in the current state of the environment.
+        Concept 27: The enemy is below the agent (more below than any other direction).
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 27 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "This concept only allows for 1 enemy in the environment")
+
+        enemy = env.unwrapped.enemies[0]
+
+        agent_x, agent_y = env.unwrapped.agent.x, env.unwrapped.agent.y
+        enemy_x, enemy_y = enemy.x, enemy.y
+
+        # Calculate differences
+        delta_x = enemy_x - agent_x
+        delta_y = enemy_y - agent_y
+
+        # Enemy is below if delta_y > 0 and |delta_y| > |delta_x|
+        if delta_y > 0 and abs(delta_y) > abs(delta_x):
+            return True
+
+        return False
+
+    @staticmethod
+    def is_concept_28_present(env):
+        """
+        Checks whether Concept 28 is present in the current state of the environment.
+        Concept 28: The enemy is to the left of the agent (more to the left than any other direction).
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 28 is present, otherwise False.
+        :raises ValueError: If there is not exactly one enemy in the environment.
+        """
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "This concept only allows for 1 enemy in the environment")
+
+        enemy = env.unwrapped.enemies[0]
+
+        agent_x, agent_y = env.unwrapped.agent.x, env.unwrapped.agent.y
+        enemy_x, enemy_y = enemy.x, enemy.y
+
+        # Calculate differences
+        delta_x = enemy_x - agent_x
+        delta_y = enemy_y - agent_y
+
+        # Enemy is to the left if delta_x < 0 and |delta_x| > |delta_y|
+        if delta_x < 0 and abs(delta_x) > abs(delta_y):
+            return True
+
+        return False
+
+    @staticmethod
+    def is_concept_29_present(env):
+        """
+        Checks whether Concept 29 is present in the current state of the environment.
+        Concept 29: Avocado is above the agent and enemy is below the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 29 is present, otherwise False.
+        :raises ValueError: If there is not exactly one avocado and one enemy in the environment.
+        """
+        if len(env.unwrapped.avocados) != 1:
+            raise ValueError(
+                "Concept 29 requires exactly 1 avocado in the environment.")
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Concept 29 requires exactly 1 enemy in the environment.")
+
+        avocado = env.unwrapped.avocados[0]
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        # Check if avocado is above the agent
+        delta_x_avo = avocado.x - agent.x
+        delta_y_avo = avocado.y - agent.y
+        avo_above = (delta_y_avo < 0) and (abs(delta_y_avo) > abs(delta_x_avo))
+
+        # Check if enemy is below the agent
+        delta_x_enemy = enemy.x - agent.x
+        delta_y_enemy = enemy.y - agent.y
+        enemy_below = (delta_y_enemy > 0) and (
+            abs(delta_y_enemy) > abs(delta_x_enemy))
+
+        return avo_above and enemy_below
+
+    @staticmethod
+    def is_concept_30_present(env):
+        """
+        Checks whether Concept 30 is present in the current state of the environment.
+        Concept 30: Avocado is to the right of the agent and enemy is to the left of the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 30 is present, otherwise False.
+        :raises ValueError: If there is not exactly one avocado and one enemy in the environment.
+        """
+        if len(env.unwrapped.avocados) != 1:
+            raise ValueError(
+                "Concept 30 requires exactly 1 avocado in the environment.")
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Concept 30 requires exactly 1 enemy in the environment.")
+
+        avocado = env.unwrapped.avocados[0]
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        # Check if avocado is to the right of the agent
+        delta_x_avo = avocado.x - agent.x
+        delta_y_avo = avocado.y - agent.y
+        avo_right = (delta_x_avo > 0) and (abs(delta_x_avo) > abs(delta_y_avo))
+
+        # Check if enemy is to the left of the agent
+        delta_x_enemy = enemy.x - agent.x
+        delta_y_enemy = enemy.y - agent.y
+        enemy_left = (delta_x_enemy < 0) and (
+            abs(delta_x_enemy) > abs(delta_y_enemy))
+
+        return avo_right and enemy_left
+
+    @staticmethod
+    def is_concept_31_present(env):
+        """
+        Checks whether Concept 31 is present in the current state of the environment.
+        Concept 31: Avocado is below the agent and enemy is above the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 31 is present, otherwise False.
+        :raises ValueError: If there is not exactly one avocado and one enemy in the environment.
+        """
+        if len(env.unwrapped.avocados) != 1:
+            raise ValueError(
+                "Concept 31 requires exactly 1 avocado in the environment.")
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Concept 31 requires exactly 1 enemy in the environment.")
+
+        avocado = env.unwrapped.avocados[0]
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        # Check if avocado is below the agent
+        delta_x_avo = avocado.x - agent.x
+        delta_y_avo = avocado.y - agent.y
+        avo_below = (delta_y_avo > 0) and (abs(delta_y_avo) > abs(delta_x_avo))
+
+        # Check if enemy is above the agent
+        delta_x_enemy = enemy.x - agent.x
+        delta_y_enemy = enemy.y - agent.y
+        enemy_above = (delta_y_enemy < 0) and (
+            abs(delta_y_enemy) > abs(delta_x_enemy))
+
+        return avo_below and enemy_above
+
+    @staticmethod
+    def is_concept_32_present(env):
+        """
+        Checks whether Concept 32 is present in the current state of the environment.
+        Concept 32: Avocado is to the left of the agent and enemy is to the right of the agent.
+
+        :param env: The current environment instance (AvocadoRunEnv)
+        :return: True if Concept 32 is present, otherwise False.
+        :raises ValueError: If there is not exactly one avocado and one enemy in the environment.
+        """
+        if len(env.unwrapped.avocados) != 1:
+            raise ValueError(
+                "Concept 32 requires exactly 1 avocado in the environment.")
+        if len(env.unwrapped.enemies) != 1:
+            raise ValueError(
+                "Concept 32 requires exactly 1 enemy in the environment.")
+
+        avocado = env.unwrapped.avocados[0]
+        enemy = env.unwrapped.enemies[0]
+        agent = env.unwrapped.agent
+
+        # Check if avocado is to the left of the agent
+        delta_x_avo = avocado.x - agent.x
+        delta_y_avo = avocado.y - agent.y
+        avo_left = (delta_x_avo < 0) and (abs(delta_x_avo) > abs(delta_y_avo))
+
+        # Check if enemy is to the right of the agent
+        delta_x_enemy = enemy.x - agent.x
+        delta_y_enemy = enemy.y - agent.y
+        enemy_right = (delta_x_enemy > 0) and (
+            abs(delta_x_enemy) > abs(delta_y_enemy))
+
+        return avo_left and enemy_right
