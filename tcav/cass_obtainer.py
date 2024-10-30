@@ -28,7 +28,7 @@ class CASSObtainer:
 
     def __init__(self, concept_observations_dict):
         self.concept_observations_dict = concept_observations_dict
-        self.concepts = [c for c in ConceptDetector.concept_name_dict.keys()]
+        self.concepts = [c for c in concept_observations_dict.keys()]
         self.classifier_scores_df = pd.DataFrame(
             columns=["concept_index", "concept_name", "layer_index",
                      "layer_name", "classifier_score", "training_step"]
