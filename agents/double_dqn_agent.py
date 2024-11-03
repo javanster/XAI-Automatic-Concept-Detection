@@ -231,6 +231,8 @@ class DoubleDQNAgent:
         )
 
         episode_rewards = []
+        terminations = 0
+        truncations = 0
 
         for _ in range(episodes):
 
@@ -261,10 +263,14 @@ class DoubleDQNAgent:
                 time.sleep(2)
 
             episode_rewards.append(episode_reward)
+            if terminated:
+                terminations += 1
+            if truncated:
+                truncations += 1
 
         self.env.close()
 
-        return episode_rewards
+        return episode_rewards, terminations, truncations
 
     def train_with_concept_classifier_checkpoints(self, config, classifier_scores_file_path, concept_observations_dict, use_wandb=False):
         cass_obtainer = CASSObtainer(
