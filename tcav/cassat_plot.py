@@ -81,16 +81,16 @@ def cassat_plot(
     ax.set_zlim(0, 1.0)
     ax.set_axisbelow(False)
     ax.set_title(
-        f"Concept {concept_index}: {concept_name}", fontsize=80, y=0.95)
-    ax.set_xlabel("Layer", fontsize=30, labelpad=200, zorder=10)
-    ax.set_ylabel("Training steps", fontsize=30, labelpad=75, zorder=10)
-    ax.set_zlabel("Adjusted classifier score",
-                  fontsize=30, labelpad=75, zorder=10)
+        f"{concept_name}", fontsize=80, y=0.95)
+    ax.set_xlabel("Layer", fontsize=50, labelpad=300, zorder=10)
+    ax.set_ylabel("Training steps", fontsize=50, labelpad=100, zorder=10)
+    ax.set_zlabel("Concept probe score",
+                  fontsize=50, labelpad=75, zorder=10)
     ax.set_box_aspect(aspect=None, zoom=0.8)
 
-    plt.xticks(fontsize=30, rotation=0)
+    plt.xticks(fontsize=50, rotation=0)
     plt.xticks(np.arange(len(layers)), layers)
-    plt.yticks(fontsize=30)
+    plt.yticks(fontsize=50)
     ax.tick_params('z', labelsize=25, pad=20, reset=True)
     fig.patch.set_facecolor("white")
 
