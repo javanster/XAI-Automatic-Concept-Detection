@@ -19,6 +19,7 @@ class MangoRun(Env):
             spawn_unripe_mangoes=True,
     ):
         super().__init__()
+        self.name = "MangoRun"
         self.STEP_PENALTY = -0.02
         self.UNRIPE_MANGO_REWARD = 0.1
         self.RIPE_MANGO_REWARD = 1.02

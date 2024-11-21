@@ -23,6 +23,7 @@ class AvocadoRunEnv(Env):
             aggressive_enemies=False,
     ):
         super().__init__()
+        self.name = "AvocadoRun"
         self.STEP_PENALTY = -0.0035
         self.ENEMY_HIT_PENALTY = -0.3
         self.AVOCADO_REWARD = 1.0035
