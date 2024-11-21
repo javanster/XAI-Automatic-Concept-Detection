@@ -34,7 +34,8 @@ class DoubleDQNAgent:
     def _create_model(self, learning_rate):
         model = Sequential()
         model.add(Input(shape=self.env.observation_space.shape))
-        model.add(Conv2D(32, kernel_size=3, activation="relu", padding="same"))
+        model.add(Conv2D(16, kernel_size=3, activation="relu", padding="same"))
+        model.add(Conv2D(16, kernel_size=3, activation="relu", padding="same"))
         model.add(Flatten())
         model.add(Dense(32, activation="relu"))
         model.add(Dense(32, activation="relu"))
@@ -87,6 +88,23 @@ class DoubleDQNAgent:
             shuffle=False  # Sampling from the replay buffer has already shuffled the data
         )
 
+    def _save_training_info(self, directory_path, config):
+        with open(f"{directory_path}/info.txt", "w") as file:
+            file.write("Detailed Model Summary\n")
+            file.write("=" * 50 + "\n")
+            for i, layer in enumerate(self.online_model.layers):
+                file.write(f"Layer {i + 1}: {layer.name}\n")
+                file.write(f"  Type: {layer.__class__.__name__}\n")
+                layer_config = layer.get_config()
+                for key, value in layer_config.items():
+                    file.write(f"  {key}: {value}\n")
+                file.write("-" * 50 + "\n")
+
+            file.write("\n\nTraining Config\n")
+            file.write("=" * 50 + "\n")
+            for key, value in config.items():
+                file.write(f"{key}: {value}\n")
+
     def train(self, config, use_wandb=False, use_sweep=False):
 
         if use_wandb:
@@ -137,6 +155,11 @@ class DoubleDQNAgent:
 
         steps_passed = 0
         episodes_passed = 0
+
+        model_dir = f"models/{self.env.unwrapped.name}/{wandb.run.name}" if use_wandb else f"models/{self.env.unwrapped.name}/run_{int(time.time())}"
+        os.makedirs(model_dir, exist_ok=True)
+
+        self._save_training_info(model_dir, config)
 
         with tqdm(total=steps_to_train, unit="step") as pbar:
             while steps_passed < steps_to_train:
@@ -211,13 +234,18 @@ class DoubleDQNAgent:
                         # Checks every average window episode whether a new best static average is reached
                         if average_reward > self.best_tumbling_window_average:
                             self.best_tumbling_window_average = average_reward
-                            self.online_model.save(
-                                f"models/model_{average_reward:_>9.4f}avg_{max_reward:_>9.4f}max_{min_reward:_>9.4f}min__{int(time.time())}.keras")
+
+                            model_file_path = f"{model_dir}/{int(time.time())}_model_{average_reward:_>9.4f}avg_{max_reward:_>9.4f}max_{min_reward:_>9.4f}min.keras"
+                            self.online_model.save(model_file_path)
 
                 if use_wandb:
                     wandb.log(log_data)
 
             self.env.close()
+
+        # Save last model
+        model_file_path = f"{model_dir}/{int(time.time())}_model_{average_reward:_>9.4f}avg_{max_reward:_>9.4f}max_{min_reward:_>9.4f}min.keras"
+        self.online_model.save(model_file_path)
 
     def test(self, model_path, episodes=10, env=None):
         if env:
@@ -272,6 +300,7 @@ class DoubleDQNAgent:
         return episode_rewards, terminations, truncations
 
     def train_with_concept_classifier_checkpoints(self, config, classifier_scores_file_path, concept_observations_dict, use_wandb=False):
+        # train_with_concept_classifier_checkpoints NEEDS TO BE UPDATED IN TERMS OF SAVING AND SUMMARY
         cass_obtainer = CASSObtainer(
             concept_observations_dict=concept_observations_dict,
         )
