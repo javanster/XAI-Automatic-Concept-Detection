@@ -2,7 +2,7 @@ from utils import ObservationHandler
 import gymnasium as gym
 import avocado_run
 import numpy as np
-from agents import ValueIterationAgent
+from agents import ArValueIterationAgent
 import os
 
 ######################## GATHERING OF OBSERVATIONS WHERE AN OPTIMAL POLICY OUTPUTS A SPECIFIC CLASS AS THE CLASS OF HIGHEST VALUE ########################
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     env_1_enemy = gym.make(id="AvocadoRun-v0", num_enemies=1)
     env_name = "env_1_enemies_1_avocados"
 
-    agent = ValueIterationAgent(env=env_1_enemy)
+    agent = ArValueIterationAgent(env=env_1_enemy)
 
     output_classes = [action for action in range(env_1_enemy.action_space.n)]
 
