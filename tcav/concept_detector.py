@@ -3,8 +3,7 @@ import numpy as np
 
 class ConceptDetector:
     """
-    A class to detect the presence of specific directional concepts in the AvocadoRunEnv environment.
-    Each concept is defined based on the relative position of the avocado to the agent.
+    A class to detect the presence of concepts in the AvocadoRunEnv environment.
     """
 
     concept_name_dict = {
