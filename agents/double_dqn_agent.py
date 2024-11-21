@@ -35,7 +35,6 @@ class DoubleDQNAgent:
         model = Sequential()
         model.add(Input(shape=self.env.observation_space.shape))
         model.add(Conv2D(32, kernel_size=3, activation="relu", padding="same"))
-        model.add(Conv2D(64, kernel_size=3, activation="relu", padding="same"))
         model.add(Flatten())
         model.add(Dense(32, activation="relu"))
         model.add(Dense(32, activation="relu"))

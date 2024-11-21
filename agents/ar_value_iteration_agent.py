@@ -3,7 +3,7 @@ import os
 from tqdm import tqdm
 
 
-class ValueIterationAgent:
+class ArValueIterationAgent:
     """
     A Value iteration agent for the AvocadoRun environment. Only works for 1 enemy and 1 avocado.
     """
