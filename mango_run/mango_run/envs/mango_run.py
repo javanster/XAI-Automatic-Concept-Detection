@@ -79,8 +79,6 @@ class MangoRun(Env):
             ]
 
         self.unripe_mango_spawn_positions = [(3, 1), (1, 3), (3, 5), (5, 3)]
-        self.walls = []
-        self.unripe_mangoes = []
 
     def _get_possible_ripe_mango_spawn_locations(self, wall_map):
         rows, cols = wall_map.shape
@@ -131,6 +129,9 @@ class MangoRun(Env):
             agent_starting_position=None,
     ):
         super().reset(seed=seed)
+
+        self.walls = []
+        self.unripe_mangoes = []
 
         agent_start_position = agent_starting_position if agent_starting_position else self.agent_spawn_locations[random.randint(
             0, len(self.agent_spawn_locations) - 1)]
