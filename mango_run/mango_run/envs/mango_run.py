@@ -79,6 +79,8 @@ class MangoRun(Env):
             ]
 
         self.unripe_mango_spawn_positions = [(3, 1), (1, 3), (3, 5), (5, 3)]
+        self.possible_ripe_mango_starting_positions = self._get_possible_ripe_mango_spawn_locations(
+            self.wall_map)
 
     def _get_possible_ripe_mango_spawn_locations(self, wall_map):
         rows, cols = wall_map.shape
@@ -136,10 +138,8 @@ class MangoRun(Env):
         agent_start_position = agent_starting_position if agent_starting_position else self.agent_spawn_locations[random.randint(
             0, len(self.agent_spawn_locations) - 1)]
 
-        possible_ripe_mango_starting_positions = self._get_possible_ripe_mango_spawn_locations(
-            self.wall_map)
-        ripe_mango_starting_positions = possible_ripe_mango_starting_positions[random.randint(
-            0, len(possible_ripe_mango_starting_positions) - 1)]
+        ripe_mango_starting_positions = self.possible_ripe_mango_starting_positions[random.randint(
+            0, len(self.possible_ripe_mango_starting_positions) - 1)]
 
         for y in range(self.grid_side_height):
             for x in range(self.grid_side_width):
