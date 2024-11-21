@@ -1,4 +1,4 @@
-### Avocade Run Environment
+### Avocado Run Environment
 
 To install, run:
 
