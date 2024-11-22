@@ -228,7 +228,7 @@ class MangoRunOptimalAgent:
 
         print(f"\nTesting policy for {episodes} episodes...")
         for episode in range(episodes):
-            observation, info = self.env.unwrapped.reset()
+            _, _ = self.env.unwrapped.reset()
             terminated = False
             truncated = False
             episode_reward = 0
