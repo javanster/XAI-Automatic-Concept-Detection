@@ -1,1 +1,2 @@
 from .avocado_run_observation_handler import AvocadoRunObservationHandler
+from .mango_run_observation_handler import MangoRunObservationHandler
