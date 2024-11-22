@@ -1,5 +1,5 @@
 from tcav import ConceptDetector
-from utils import ObservationHandler
+from utils import AvocadoRunObservationHandler
 from keras.api.saving import load_model
 import gymnasium as gym
 import avocado_run
@@ -16,7 +16,7 @@ def obtain_model_specific_observations(train_run_name, model_name, env, env_name
 
     file_path_base = f"{directory_path}/observations_where_best_class_"
 
-    ObservationHandler.save_observations_specific_output_classes(
+    AvocadoRunObservationHandler.save_observations_specific_output_classes(
         env=env,
         model=model,
         output_classes=output_classes,

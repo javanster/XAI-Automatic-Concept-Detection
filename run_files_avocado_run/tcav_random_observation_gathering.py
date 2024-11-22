@@ -1,10 +1,10 @@
-from utils import ObservationHandler
+from utils import AvocadoRunObservationHandler
 import gymnasium as gym
 import avocado_run
 import os
 
 
-def obtain_policy_specific_observations(envs, env_names, observations_n):
+def obtain_random_observations(envs, env_names, observations_n):
 
     if len(envs) != len(env_names):
         raise ValueError("Provided number of envs and env_names must be equal")
@@ -16,7 +16,7 @@ def obtain_policy_specific_observations(envs, env_names, observations_n):
         directory_path = "tcav_data/observations/random_observations"
         file_path = f"{directory_path}/{env_name}.npy"
 
-        ObservationHandler.save_random_observations(
+        AvocadoRunObservationHandler.save_random_observations(
             envs=[env],
             num_total_observations=observations_n,
             file_path=file_path
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     envs = [env_2_enemies_1_avocados, env_1_enemies_1_avocados]
     env_names = ["env_2_enemies_1_avocados", "env_1_enemies_1_avocados"]
 
-    obtain_policy_specific_observations(
+    obtain_random_observations(
         envs=envs,
         env_names=env_names,
         observations_n=5000,

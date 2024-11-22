@@ -5,7 +5,7 @@ import random
 import os
 
 
-class ObservationHandler:
+class AvocadoRunObservationHandler:
     """
     A class for saving random and custom observations from the AvocadoRun environment, and showing
     them.
@@ -40,7 +40,7 @@ class ObservationHandler:
 
         random.shuffle(observations)
 
-        ObservationHandler._save_observations(
+        AvocadoRunObservationHandler._save_observations(
             observations=observations, file_path=file_path)
 
     @staticmethod
@@ -105,7 +105,7 @@ class ObservationHandler:
 
             observations.append(observation)
 
-        ObservationHandler._save_observations(
+        AvocadoRunObservationHandler._save_observations(
             observations=observations, file_path=file_path)
 
     @staticmethod
@@ -163,9 +163,9 @@ class ObservationHandler:
         random.shuffle(observations_with_concept)
         random.shuffle(observations_without_concept)
 
-        ObservationHandler._save_observations(
+        AvocadoRunObservationHandler._save_observations(
             observations=observations_with_concept, file_path=file_path_concept)
-        ObservationHandler._save_observations(
+        AvocadoRunObservationHandler._save_observations(
             observations=observations_without_concept, file_path=file_path_other)
 
     @staticmethod
@@ -215,7 +215,7 @@ class ObservationHandler:
             observations = observation_dict[ocls]
             file_path = f"{file_path_base}{ocls}.npy"
 
-            ObservationHandler._save_observations(
+            AvocadoRunObservationHandler._save_observations(
                 observations=observations, file_path=file_path)
 
             print(
@@ -280,7 +280,7 @@ class ObservationHandler:
 
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            ObservationHandler._save_observations(
+            AvocadoRunObservationHandler._save_observations(
                 observations=observations,
                 file_path=file_path
             )

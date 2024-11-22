@@ -1,5 +1,5 @@
 from sklearn.linear_model import LogisticRegression
-from utils import ObservationHandler
+from utils import AvocadoRunObservationHandler
 from keras import Model
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -62,13 +62,13 @@ class CASSObtainer:
 
                 for concept in self.concepts:
 
-                    observations_with_concept = ObservationHandler.load_observations(
+                    observations_with_concept = AvocadoRunObservationHandler.load_observations(
                         file_path=self.concept_observations_dict.get(
                             concept)["concept_obs_filepath"],
                         normalize=True,
                     )
 
-                    random_observations_without_concept = ObservationHandler.load_observations(
+                    random_observations_without_concept = AvocadoRunObservationHandler.load_observations(
                         file_path=self.concept_observations_dict.get(
                             concept)["not_concept_obs_filepath"],
                         normalize=True,

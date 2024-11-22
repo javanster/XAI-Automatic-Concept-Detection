@@ -1,6 +1,6 @@
 import gymnasium as gym
 import avocado_run
-from utils import ObservationHandler
+from utils import AvocadoRunObservationHandler
 import time
 
 #################### CUSTOM ENTITY POSITIONS FOR OOD OBSERVATIONS ####################
@@ -92,7 +92,7 @@ for config in configs:
     train_run_name = config["train_run_name"]
     model_name = config["model_name"]
 
-    ObservationHandler.save_random_observations(
+    AvocadoRunObservationHandler.save_random_observations(
         envs=[env_0_enemies_1_avocado, env_1_enemy_1_avocado,
               env_0_enemies_2_avocados],
         num_total_observations=1000,
@@ -101,7 +101,7 @@ for config in configs:
 
     for key in config["ood_observations_dict"].keys():
         observation_dict = config["ood_observations_dict"][key]
-        ObservationHandler.save_custom_observations(
+        AvocadoRunObservationHandler.save_custom_observations(
             envs=[env_0_enemies_1_avocado, env_1_enemy_1_avocado,
                   env_0_enemies_2_avocados],
             file_path=f"shap_data/observations/ood/1_avo_stuck/{train_run_name}/{model_name}/{key}_observations.npy",
@@ -113,7 +113,7 @@ for config in configs:
     for key in config["ood_observations_dict"].keys():
         observation_dict = config["ood_observations_dict"][key]
         for i in range(len(observation_dict["agent_position_list"])):
-            ObservationHandler.show_observation(
+            AvocadoRunObservationHandler.show_observation(
                 file_path=f"shap_data/observations/ood/1_avo_stuck/{train_run_name}/{model_name}/{key}_observations.npy",
                 observation_index=i
             )

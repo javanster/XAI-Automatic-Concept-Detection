@@ -1,6 +1,6 @@
 import gymnasium as gym
 import avocado_run
-from utils import ObservationHandler
+from utils import AvocadoRunObservationHandler
 import time
 
 
@@ -83,7 +83,7 @@ normal_env_entity_positions = {
 env = gym.make(id="AvocadoRun-v0", num_avocados=1)
 
 
-ObservationHandler.save_random_observations(
+AvocadoRunObservationHandler.save_random_observations(
     envs=[env],
     num_total_observations=1000,
     file_path=f"shap_data/observations/normal_environment/random_observations.npy"
@@ -91,7 +91,7 @@ ObservationHandler.save_random_observations(
 
 for key in normal_env_entity_positions.keys():
     observation_dict = normal_env_entity_positions[key]
-    ObservationHandler.save_custom_observations(
+    AvocadoRunObservationHandler.save_custom_observations(
         envs=[env for _ in range(3)],
         file_path=f"shap_data/observations/normal_environment/{key}_observations.npy",
         agent_position_list=observation_dict["agent_position_list"],
@@ -100,7 +100,7 @@ for key in normal_env_entity_positions.keys():
     )
 
 for i in range(3):
-    ObservationHandler.show_observation(
+    AvocadoRunObservationHandler.show_observation(
         file_path=f"shap_data/observations/normal_environment/do_nothing_good_action_enemy_focused_observations.npy",
         observation_index=i
     )

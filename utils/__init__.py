@@ -1,1 +1,1 @@
-from .observation_handler import ObservationHandler
+from .avocado_run_observation_handler import AvocadoRunObservationHandler

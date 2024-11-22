@@ -1,9 +1,9 @@
 from shap import DeepExplainer
-from shap_image_plot import shap_image_plot
+from shap_utils import shap_image_plot
 from keras.api.saving import load_model
 import gymnasium as gym
 import avocado_run
-from utils import ObservationHandler
+from utils import AvocadoRunObservationHandler
 import matplotlib.pyplot as plt
 import os
 
@@ -19,7 +19,7 @@ for i in range(len(train_run_names)):
 
     model = load_model(f"models/{train_run_name}/{model_name}.keras")
 
-    background_observations = ObservationHandler.load_observations(
+    background_observations = AvocadoRunObservationHandler.load_observations(
         file_path="shap_data/observations/normal_environment/random_observations.npy", normalize=True)
 
     actions = ["up", "right", "down", "left", "do_nothing"]
@@ -28,7 +28,7 @@ for i in range(len(train_run_names)):
     for good_action_for_obs in actions:
         for observation_focus in observation_focuses:
 
-            observations_to_explain = ObservationHandler.load_observations(
+            observations_to_explain = AvocadoRunObservationHandler.load_observations(
                 file_path=f"shap_data/observations/normal_environment/{good_action_for_obs}_good_action_{observation_focus}_focused_observations.npy",  normalize=True)
 
             if len(observations_to_explain) > 0:

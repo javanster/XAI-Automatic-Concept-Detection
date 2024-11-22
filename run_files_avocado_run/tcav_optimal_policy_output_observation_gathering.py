@@ -1,4 +1,4 @@
-from utils import ObservationHandler
+from utils import AvocadoRunObservationHandler
 import gymnasium as gym
 import avocado_run
 import numpy as np
@@ -14,7 +14,7 @@ def obtain_policy_specific_observations(env, env_name, output_classes, observati
 
     file_path_base = f"{directory_path}/observations_where_best_class_"
 
-    ObservationHandler.save_observations_optimal_policy_specific_output_classes(
+    AvocadoRunObservationHandler.save_observations_optimal_policy_specific_output_classes(
         env=env,
         policy=policy,
         state_to_index=state_to_index,

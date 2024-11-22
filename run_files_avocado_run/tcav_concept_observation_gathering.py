@@ -1,5 +1,5 @@
-from utils import ObservationHandler
-from concept_observation_args import concept_observations_args
+from utils import AvocadoRunObservationHandler
+from run_files_avocado_run.concept_observation_args import concept_observations_args
 from tqdm import tqdm
 import os
 
@@ -39,7 +39,7 @@ def gather_concept_observation_bathes(batches_n, observations_n, concept_observa
 
                 concept_index = args["concept_index"]
 
-                ObservationHandler.save_observations_given_concept(
+                AvocadoRunObservationHandler.save_observations_given_concept(
                     **args,
                     num_observations_for_each=observations_n,
                     file_path_concept=get_concept_file_path(

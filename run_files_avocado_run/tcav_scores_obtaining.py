@@ -1,6 +1,6 @@
 from keras.api.saving import load_model
 import numpy as np
-from utils import ObservationHandler
+from utils import AvocadoRunObservationHandler
 from tcav import ConceptDetector
 import gymnasium as gym
 import avocado_run
@@ -26,7 +26,7 @@ def get_observations(observation_type, train_run_name, model_name, target_class,
     elif observation_type == "random":
         observation_file_path = f"tcav_data/observations/random_observations/{env_name}.npy"
 
-    return ObservationHandler.load_observations(
+    return AvocadoRunObservationHandler.load_observations(
         file_path=observation_file_path,
         normalize=True,
     )

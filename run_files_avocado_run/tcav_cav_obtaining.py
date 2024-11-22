@@ -1,5 +1,5 @@
 from keras.api.saving import load_model
-from utils import ObservationHandler
+from utils import AvocadoRunObservationHandler
 from keras import Model
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -47,12 +47,12 @@ def obtain_cavs(layer_indexes, concept_indexes, observation_batches, model, env_
 
             for concept_index in concept_indexes:
 
-                observations_with_concept = ObservationHandler.load_observations(
+                observations_with_concept = AvocadoRunObservationHandler.load_observations(
                     file_path=f"tcav_data/observations/concept_observations/{env_type}/batch_{observation_batch}/observations_containing_concept_{concept_index}.npy",
                     normalize=True,
                 )
 
-                random_observations_without_concept = ObservationHandler.load_observations(
+                random_observations_without_concept = AvocadoRunObservationHandler.load_observations(
                     file_path=f"tcav_data/observations/concept_observations/{env_type}/batch_{observation_batch}/observations_not_containing_concept_{concept_index}.npy",
                     normalize=True,
                 )
