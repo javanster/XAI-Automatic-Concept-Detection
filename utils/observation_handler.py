@@ -98,8 +98,9 @@ class ObservationHandler:
                 batch_size = 256
                 observation_batch = np.array([env.reset()[0]
                                               for _ in range(batch_size)])
+                observation_batch_normalized = observation_batch / 255
                 model_output_batch = model.predict(
-                    observation_batch, batch_size=batch_size)
+                    observation_batch_normalized, batch_size=batch_size)
 
                 for i, model_output in enumerate(model_output_batch):
                     predicted_class = np.argmax(model_output)
