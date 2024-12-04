@@ -16,7 +16,6 @@ class FruitRun(Env):
             render_mode=None,
             render_fps=4,
             agent_starting_position=None,
-            num_enemies=2,
             mango_always_present=False
     ):
         super().__init__()
@@ -27,7 +26,6 @@ class FruitRun(Env):
         self.MANGO_REWARD = 1.0035
         self.reward_range = (-1, 1)
 
-        self.num_enemies = num_enemies
         self.mango_always_present = mango_always_present
 
         self.APPLE_COLOR = (0, 255, 0)
@@ -86,6 +84,8 @@ class FruitRun(Env):
                 self.mango = Entity(
                     grid_side_length=self.grid_side_length,
                 )
+
+        self.num_enemies = 2
 
         self.enemies = []
         for _ in range(self.num_enemies):
